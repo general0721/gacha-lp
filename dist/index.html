@@ -1,0 +1,1312 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Lieto Clinic 特別ガチャ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
+<link rel="preload" as="image" href="assets/bg.webp">
+<link rel="preload" as="image" href="assets/gacha.webp">
+<style>
+  :root {
+    --pink: #e56fa6;
+    --pink-deep: #c9528b;
+    --pink-soft: #fbd3e5;
+    --lavender: #b89be6;
+    --gold: #c9a24a;
+    --gold-light: #f3dc9b;
+    --ink: #6b3a57;
+    --sky: #cfe6f8;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    background: var(--sky);
+    font-family: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", sans-serif;
+    color: var(--ink);
+    overflow: hidden;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  /* スマホ幅の1カラム。PCでは中央に480pxで表示 */
+  .app {
+    position: relative;
+    width: min(100vw, 480px);
+    height: 100svh;
+    margin: 0 auto;
+    overflow: hidden;
+    container-type: size;
+    background: var(--sky);
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity .6s ease;
+  }
+  .app.is-ready { opacity: 1; }
+
+  /* 背景画像（941x1672）を cover で敷く座標系。ガチャはこの中に%配置 */
+  .stage {
+    position: absolute;
+    left: 50%; top: 50%;
+    width: max(100cqw, 56.279cqh);
+    aspect-ratio: 941 / 1672;
+    transform: translate(-50%, -50%);
+    background: url(assets/bg.webp) center / 100% 100% no-repeat;
+  }
+
+  /* タイトル（ガチャの上） */
+  .title {
+    position: absolute;
+    left: 50%; top: 3.8%;
+    width: min(78%, 94cqw);
+    transform: translateX(-50%);
+    filter: drop-shadow(0 4px 10px rgba(201, 82, 139, .18));
+    pointer-events: none;
+  }
+  .floor-shadow {
+    position: absolute;
+    left: 50%; top: 73.36%;
+    width: 43%; height: 2.2%;
+    transform: translateX(-50%);
+    border-radius: 50%;
+    background: radial-gradient(closest-side, rgba(140, 80, 120, .32), rgba(140, 80, 120, 0));
+    filter: blur(2px);
+  }
+
+  .gacha {
+    position: absolute;
+    left: 18%; top: 24.44%;
+    width: 64%;
+    aspect-ratio: 1024 / 1536;
+    transform-origin: 50% 92%;
+  }
+  .gacha > * { position: absolute; display: block; }
+  .gacha .body { inset: 0; width: 100%; height: 100%; }
+  /* カプセルの物理演算 canvas：ガチャ画像座標 x110-910, y180-900 */
+  .gacha .caps  { left: 10.742%; top: 11.719%; width: 78.125%; height: 46.875%; }
+  .gacha .glass { inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  .gacha .label { left: 26.953%; top: 27.734%; width: 46.094%; height: 18.75%; }
+  .gacha .hub   { left: 45.947%; top: 68.001%; width: 7.813%;  height: 5.208%; }
+  .gacha .handle {
+    left: 41.016%; top: 64.714%; width: 17.578%; height: 11.719%;
+    filter: drop-shadow(0 2px 2px rgba(90, 60, 30, .35));
+    animation: handle-idle 2.6s ease-in-out infinite;
+  }
+  @keyframes handle-idle {
+    0%, 62%, 100% { transform: rotate(0); }
+    70% { transform: rotate(22deg); }
+    78% { transform: rotate(-4deg); }
+    86% { transform: rotate(6deg); }
+  }
+
+  /* 取手の上の右回転矢印 */
+  .arrow {
+    left: 29.59%; top: 57.1%; width: 40.53%; height: 27.02%;
+    overflow: visible;
+    pointer-events: none;
+    filter: drop-shadow(0 0 8px rgba(255, 255, 255, .95)) drop-shadow(0 3px 6px rgba(201, 82, 139, .45));
+    transform-origin: 50% 50%;
+    animation: arrow-sweep 1.3s cubic-bezier(.3, .1, .4, 1) infinite;
+  }
+  .arrow .flow { stroke-dasharray: 16 20; animation: arrow-flow .7s linear infinite; }
+  @keyframes arrow-sweep {
+    0%   { transform: rotate(-24deg); opacity: 0; }
+    10%  { opacity: 1; }
+    84%  { opacity: 1; }
+    100% { transform: rotate(20deg); opacity: 0; }
+  }
+  @keyframes arrow-flow { to { stroke-dashoffset: -36; } }
+
+  .tap-ring {
+    left: 44%; top: 66.3%; width: 12%; height: 8%;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, .9);
+    box-shadow: 0 0 10px rgba(255, 255, 255, .8);
+    animation: ring 2.6s ease-out infinite;
+    pointer-events: none;
+  }
+  @keyframes ring {
+    0%, 60% { transform: scale(.6); opacity: 0; }
+    66% { opacity: 1; }
+    100% { transform: scale(1.7); opacity: 0; }
+  }
+
+  .hint {
+    position: absolute;
+    left: 50%; bottom: calc(6cqh + env(safe-area-inset-bottom));
+    transform: translateX(-50%);
+    display: flex; align-items: center; gap: .5em;
+    padding: .8em 1.5em;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .78);
+    border: 1px solid rgba(201, 162, 74, .55);
+    box-shadow: 0 6px 20px rgba(120, 150, 200, .25);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    font-size: clamp(14px, 4.2cqw, 18px);
+    font-weight: 700;
+    letter-spacing: .08em;
+    color: var(--pink-deep);
+    white-space: nowrap;
+    animation: hint-pulse 1.6s ease-in-out infinite;
+  }
+  .hint svg { width: 1.3em; height: 1.3em; flex: none; }
+  @keyframes hint-pulse {
+    0%, 100% { transform: translateX(-50%) scale(1); }
+    50% { transform: translateX(-50%) scale(1.05); }
+  }
+
+  .fade-out { transition: opacity .25s ease; opacity: 0 !important; pointer-events: none; }
+
+  /* ===== 演出レイヤー ===== */
+  .veil {
+    position: absolute; inset: 0;
+    background: radial-gradient(circle at 50% 42%, rgba(255, 246, 251, .5), rgba(214, 190, 236, .72) 75%);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    opacity: 0;
+    pointer-events: none;
+  }
+  .aura {
+    position: absolute;
+    width: 150cqw; aspect-ratio: 1;
+    left: 50%; top: 42%;
+    translate: -50% -50%;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .aura::before, .aura::after { content: ""; position: absolute; inset: 0; border-radius: 50%; }
+  .aura::before {
+    background: repeating-conic-gradient(from 0deg, rgba(255, 236, 170, .55) 0deg 7deg, rgba(255, 255, 255, 0) 7deg 22deg);
+    -webkit-mask: radial-gradient(closest-side, #000 10%, transparent 72%);
+    mask: radial-gradient(closest-side, #000 10%, transparent 72%);
+    animation: spin 14s linear infinite;
+  }
+  .aura::after { background: radial-gradient(closest-side, rgba(255, 255, 255, .95) 12%, rgba(255, 220, 238, .5) 32%, rgba(255, 255, 255, 0) 60%); }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .capsule {
+    position: absolute; left: 0; top: 0;
+    width: 36cqw; aspect-ratio: 1;
+    opacity: 0;
+    pointer-events: none;
+    will-change: transform;
+  }
+  .capsule .half { position: absolute; inset: 0; will-change: transform, opacity; }
+  .capsule .half img { width: 100%; height: 100%; display: block; }
+  .capsule .half.top { filter: drop-shadow(0 6px 10px rgba(160, 80, 140, .25)); }
+  /* 虹色（オーロラ）：半球ごとに流れるグラデを color 合成で重ねる（陰影とハイライトは残る） */
+  .capsule .rb-clip {
+    position: absolute; inset: 0; overflow: hidden; opacity: 0; mix-blend-mode: color;
+    -webkit-mask: var(--m) center / 100% 100% no-repeat;
+    mask: var(--m) center / 100% 100% no-repeat;
+  }
+  .capsule .top { --m: url(assets/capsule-top.webp); }
+  .capsule .bottom { --m: url(assets/capsule-bottom.webp); }
+  .capsule .whole { --m: url(assets/capsule-whole.webp); filter: drop-shadow(0 6px 10px rgba(160, 80, 140, .25)); }
+  /* 割れるまではチケット入りの1枚絵（.whole）を見せ、割れた瞬間に上下の半球＋中のチケットへ差し替える */
+  .capsule .half.top, .capsule .half.bottom, .capsule .ticket-mini { opacity: 0; }
+  .capsule .ticket-mini { position: absolute; left: 14.11%; top: 21.12%; width: 71.12%; height: 34.57%; will-change: transform, opacity; }
+  .capsule .rb-clip.soft { mix-blend-mode: normal; }
+  .capsule .rb-clip.shine { mix-blend-mode: normal; }
+  /* オーロラ色（画面のオーロラと同じ マゼンタ／バイオレット／スカイブルー＋ミント・アンバー）の
+     ぼかした色だまりが、ゆっくり渦を巻きながら混ざり合う */
+  .capsule .rb {
+    position: absolute; inset: -35%;
+    background:
+      radial-gradient(24% 22% at 34% 32%, rgb(255, 84, 170) 30%, rgba(255, 84, 170, 0) 100%),
+      radial-gradient(24% 22% at 66% 30%, rgb(150, 96, 255) 30%, rgba(150, 96, 255, 0) 100%),
+      radial-gradient(24% 24% at 68% 66%, rgb(60, 172, 255) 30%, rgba(60, 172, 255, 0) 100%),
+      radial-gradient(22% 24% at 32% 68%, rgb(70, 225, 190) 30%, rgba(70, 225, 190, 0) 100%),
+      radial-gradient(14% 14% at 58% 44%, rgba(255, 196, 80, .75) 20%, rgba(255, 196, 80, 0) 100%),
+      linear-gradient(135deg, rgb(255, 120, 190), rgb(150, 110, 255) 35%, rgb(80, 190, 255) 65%, rgb(90, 225, 195));
+    filter: blur(3px);
+    animation: aurora-swirl 6.5s ease-in-out infinite alternate;
+  }
+  .capsule .rb-clip.soft .rb { animation-duration: 8.5s; animation-direction: alternate-reverse; }
+  @keyframes aurora-swirl {
+    0%   { transform: rotate(0deg) scale(1) translate(0, 0); }
+    35%  { transform: rotate(70deg) scale(1.12) translate(4%, -3%); }
+    70%  { transform: rotate(140deg) scale(1.02) translate(-3%, 4%); }
+    100% { transform: rotate(200deg) scale(1.1) translate(2%, 2%); }
+  }
+  .capsule .sh {
+    position: absolute; inset: -20% auto -20% -60%; width: 50%;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, .6), rgba(255, 255, 255, 0));
+    transform: skewX(-20deg);
+    animation: sheen 3s ease-in-out infinite;
+  }
+  @keyframes sheen { 0% { left: -60%; } 55%, 100% { left: 120%; } }
+  .capsule .rainbow-glow {
+    position: absolute; inset: -34%;
+    border-radius: 50%;
+    background: conic-gradient(from 0deg, rgba(255, 84, 170, .9), rgba(150, 96, 255, .85), rgba(60, 172, 255, .8), rgba(80, 226, 196, .75), rgba(255, 186, 60, .7), rgba(255, 84, 170, .9));
+    -webkit-mask: radial-gradient(closest-side, #000 40%, rgba(0, 0, 0, .55) 64%, transparent 100%);
+    mask: radial-gradient(closest-side, #000 40%, rgba(0, 0, 0, .55) 64%, transparent 100%);
+    filter: blur(14px);
+    opacity: 0;
+    animation: glow-spin 9s linear infinite, glow-breathe 2.6s ease-in-out infinite alternate;
+  }
+  @keyframes glow-spin { to { rotate: 360deg; } }
+  @keyframes glow-breathe { from { scale: 1; } to { scale: 1.08; } }
+  .capsule .sparkles { position: absolute; inset: -30%; opacity: 0; pointer-events: none; }
+  .capsule .sparkles svg {
+    overflow: visible;
+    position: absolute; width: 16%; height: 16%;
+    fill: #fff;
+    filter: drop-shadow(0 0 4px rgba(255, 170, 220, .95)) drop-shadow(0 0 8px rgba(160, 200, 255, .8));
+    animation: twinkle 1.1s ease-in-out infinite;
+  }
+  @keyframes twinkle {
+    0%, 100% { transform: scale(.2) rotate(0deg); opacity: 0; }
+    50% { transform: scale(1) rotate(45deg); opacity: 1; }
+  }
+
+  /* 取り出し口の光（カプセルが出てくる瞬間） */
+  .burst { position: absolute; left: 0; top: 0; width: 70cqw; aspect-ratio: 1; opacity: 0; pointer-events: none; }
+  .burst > div { position: absolute; border-radius: 50%; }
+  .burst-rays {
+    inset: -30%;
+    background: repeating-conic-gradient(from 0deg, rgba(255, 238, 180, .9) 0deg 4deg, rgba(255, 255, 255, 0) 4deg 15deg, rgba(255, 200, 235, .8) 15deg 18deg, rgba(255, 255, 255, 0) 18deg 30deg);
+    -webkit-mask: radial-gradient(closest-side, #000 8%, rgba(0, 0, 0, .5) 40%, transparent 70%);
+    mask: radial-gradient(closest-side, #000 8%, rgba(0, 0, 0, .5) 40%, transparent 70%);
+    animation: spin 7s linear infinite;
+  }
+  .burst-glow { inset: 10%; background: radial-gradient(closest-side, #fff 0%, rgba(255, 246, 214, .95) 22%, rgba(255, 190, 228, .6) 48%, rgba(200, 170, 255, .25) 66%, rgba(255, 255, 255, 0) 80%); }
+  .burst-ring { inset: 32%; border: 3px solid rgba(255, 255, 255, .95); box-shadow: 0 0 14px rgba(255, 220, 140, .9), inset 0 0 10px rgba(255, 190, 230, .8); opacity: 0; }
+
+  /* オーロラ：色の帯を大きくぼかしてゆらゆら */
+  .aurora {
+    position: absolute; left: -30%; right: -30%; top: -8%; height: 70%;
+    opacity: 0; pointer-events: none;
+    filter: blur(22px) saturate(1.2);
+    animation: aurora-hue 9s ease-in-out infinite alternate;
+  }
+  .aurora i {
+    position: absolute; left: 0; right: 0; height: 30%;
+    border-radius: 50%;
+    -webkit-mask: linear-gradient(to top, transparent 0%, #000 18%, rgba(0, 0, 0, .55) 55%, transparent 100%);
+    mask: linear-gradient(to top, transparent 0%, #000 18%, rgba(0, 0, 0, .55) 55%, transparent 100%);
+    transform-origin: 50% 100%;
+  }
+  .aurora i:nth-child(1) {
+    top: 6%;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0) 5%, rgba(110, 235, 205, .75) 25%, rgba(120, 190, 255, .8) 48%, rgba(190, 140, 255, .75) 70%, rgba(255, 255, 255, 0) 95%);
+    animation: aurora-sway 7s ease-in-out infinite alternate;
+  }
+  .aurora i:nth-child(2) {
+    top: 26%;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 130, 200, .75) 22%, rgba(200, 140, 255, .7) 45%, rgba(110, 220, 255, .7) 68%, rgba(255, 255, 255, 0) 92%);
+    animation: aurora-sway 5.5s ease-in-out -2s infinite alternate-reverse;
+  }
+  .aurora i:nth-child(3) {
+    top: 46%;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0) 8%, rgba(255, 220, 130, .65) 28%, rgba(255, 140, 190, .7) 50%, rgba(150, 230, 210, .65) 74%, rgba(255, 255, 255, 0) 96%);
+    animation: aurora-sway 6.5s ease-in-out -4s infinite alternate;
+  }
+  @keyframes aurora-sway {
+    0%   { transform: translateX(-8%) skewX(-14deg) scaleY(.85) rotate(-4deg); }
+    50%  { transform: translateX(2%) skewX(6deg) scaleY(1.15) rotate(2deg); }
+    100% { transform: translateX(9%) skewX(14deg) scaleY(.95) rotate(5deg); }
+  }
+  @keyframes aurora-hue { from { filter: blur(22px) saturate(1.2) hue-rotate(-15deg); } to { filter: blur(26px) saturate(1.35) hue-rotate(25deg); } }
+  /* オーロラのカーテン（canvas：縦の光の筋が並んだ帯が波打つ。低解像度で描いて拡大＋ぼかし） */
+  .no-aurora .aurora, .no-aurora .aurora-cv { display: none; }
+  canvas.aurora-cv { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; filter: blur(2.5px); }
+
+  /* 割れる瞬間に広がる光条（白・ピンク・水色・金の筋を不揃いに重ねる） */
+  .open-rays {
+    position: absolute;
+    width: 190cqw; aspect-ratio: 1;
+    left: 50%; top: 42%;
+    translate: -50% -50%;
+    border-radius: 50%;
+    opacity: 0;
+    pointer-events: none;
+    background:
+      repeating-conic-gradient(from 2deg, rgba(255, 255, 255, .95) 0deg 1.6deg, rgba(255, 255, 255, 0) 1.6deg 11deg),
+      repeating-conic-gradient(from 7deg, rgba(255, 180, 222, .85) 0deg 2.4deg, rgba(255, 255, 255, 0) 2.4deg 19deg),
+      repeating-conic-gradient(from 13deg, rgba(165, 210, 255, .8) 0deg 2deg, rgba(255, 255, 255, 0) 2deg 26deg),
+      repeating-conic-gradient(from 20deg, rgba(255, 222, 140, .85) 0deg 1.8deg, rgba(255, 255, 255, 0) 1.8deg 33deg);
+    -webkit-mask: radial-gradient(closest-side, #000 4%, rgba(0, 0, 0, .7) 28%, transparent 100%);
+    mask: radial-gradient(closest-side, #000 4%, rgba(0, 0, 0, .7) 28%, transparent 100%);
+  }
+
+  .flash {
+    position: absolute; inset: 0;
+    background: radial-gradient(circle at 50% 42%, #fff 0%, rgba(255, 255, 255, .9) 30%, rgba(255, 255, 255, 0) 70%);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  canvas.fx { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+
+  /* チケット */
+  .result {
+    position: absolute;
+    left: 0; right: 0; top: 42%;
+    display: flex; flex-direction: column; align-items: center;
+    pointer-events: none;
+  }
+  /* チケットは支給画像（1625x822、横:縦 ≒ 1.98:1） */
+  .result { --tw: min(90cqw, 440px); }
+  .ticket {
+    position: relative;
+    width: var(--tw);
+    aspect-ratio: 1625 / 822;
+    margin-top: calc(var(--tw) * -411 / 1625);
+    opacity: 0;
+    filter: drop-shadow(0 16px 24px rgba(150, 70, 130, .4));
+  }
+  .ticket-img { display: block; width: 100%; height: 100%; }
+  /* 光の筋はチケットの形で切り抜いて重ねる */
+  .ticket-shine {
+    position: absolute; inset: 0; overflow: hidden;
+    -webkit-mask: url(assets/ticket.webp) center / 100% 100% no-repeat;
+    mask: url(assets/ticket.webp) center / 100% 100% no-repeat;
+  }
+  .ticket-shine::before, .ticket-shine::after {
+    content: "";
+    position: absolute; top: -20%; bottom: -20%; width: 26%; left: -40%;
+    background: linear-gradient(100deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, .8), rgba(255, 255, 255, 0));
+    transform: skewX(-18deg);
+    animation: shine 2.4s ease-in-out .6s infinite;
+  }
+  /* 2本目は細く、少し遅れて追いかける */
+  .ticket-shine::before { width: 8%; animation-delay: .85s; background: linear-gradient(100deg, rgba(255, 255, 255, 0), rgba(255, 250, 225, .95), rgba(255, 255, 255, 0)); }
+
+  /* チケットの後ろでふんわり脈打つ光 */
+  .ticket-glow {
+    position: absolute; inset: -22% -12%; z-index: -1;
+    border-radius: 50%;
+    background: radial-gradient(closest-side, rgba(255, 246, 214, .95), rgba(255, 190, 225, .6) 45%, rgba(200, 175, 255, .25) 65%, rgba(255, 255, 255, 0) 80%);
+    filter: blur(10px);
+    animation: ticket-glow 1.8s ease-in-out infinite alternate;
+  }
+  @keyframes ticket-glow { from { opacity: .65; scale: .96; } to { opacity: 1; scale: 1.06; } }
+
+  /* 表面のラメ：細かい光の粒が2層で交互に瞬く（チケットの形で切り抜き） */
+  .ticket-glitter {
+    position: absolute; inset: 0;
+    -webkit-mask: url(assets/ticket.webp) center / 100% 100% no-repeat;
+    mask: url(assets/ticket.webp) center / 100% 100% no-repeat;
+    pointer-events: none;
+  }
+  .ticket-glitter i { position: absolute; inset: 0; mix-blend-mode: screen; }
+  .ticket-glitter i:nth-child(1) {
+    background:
+      radial-gradient(circle, #fff 0 1px, rgba(255, 255, 255, 0) 1.8px) 3px 5px / 23px 19px,
+      radial-gradient(circle, #fff3c4 0 1.3px, rgba(255, 255, 255, 0) 2.2px) 14px 2px / 37px 29px;
+    animation: glitter 1.3s ease-in-out infinite alternate;
+  }
+  .ticket-glitter i:nth-child(2) {
+    background:
+      radial-gradient(circle, #fff 0 1.2px, rgba(255, 255, 255, 0) 2px) 9px 12px / 29px 23px,
+      radial-gradient(circle, #ffe0f0 0 1px, rgba(255, 255, 255, 0) 1.8px) 20px 8px / 41px 31px;
+    animation: glitter 1.3s ease-in-out -.65s infinite alternate;
+  }
+  @keyframes glitter { from { opacity: .05; } to { opacity: .9; } }
+
+  /* 数字やフチの上で光る十字のきらめき */
+  .ticket-stars { position: absolute; inset: 0; pointer-events: none; }
+  .ticket-stars svg {
+    position: absolute; width: 4%; aspect-ratio: 1; translate: -50% -50%;
+    fill: #fff; overflow: visible;
+    filter: drop-shadow(0 0 2px #fff) drop-shadow(0 0 4px rgba(255, 205, 120, .95)) drop-shadow(0 0 7px rgba(255, 150, 205, .7));
+    animation: twinkle 1.6s ease-in-out infinite;
+  }
+  @keyframes shine { 0% { left: -40%; } 45%, 100% { left: 130%; } }
+  .congrats {
+    position: absolute;
+    left: 0; right: 0;
+    top: calc(var(--tw) * -411 / 1625 - 3.2cqh);
+    transform: translateY(-100%);
+    text-align: center;
+    opacity: 0;
+  }
+  .congrats-en {
+    font-family: "Cormorant Garamond", serif;
+    font-weight: 600;
+    font-size: clamp(14px, 4.4cqw, 20px);
+    letter-spacing: .34em;
+    color: #b8902f;
+    text-shadow: 0 0 8px #fff, 0 0 2px #fff;
+  }
+  .congrats-ja {
+    margin-top: .2em;
+    font-weight: 700;
+    font-size: clamp(19px, 6.1cqw, 28px);
+    letter-spacing: .06em;
+    color: var(--pink-deep);
+    text-shadow: 0 0 10px #fff, 0 0 3px #fff, 0 2px 0 #fff;
+  }
+  .actions {
+    display: flex; flex-direction: column; align-items: center; gap: 12px;
+    margin-top: 5cqh;
+    opacity: 0;
+    translate: 0 12px;
+    transition: opacity .6s ease, translate .6s ease;
+  }
+  .actions.show { opacity: 1; translate: 0 0; pointer-events: auto; }
+  .cta {
+    display: inline-flex; align-items: center; justify-content: center; gap: .5em;
+    min-width: 72cqw;
+    padding: 1.05em 1.6em;
+    border-radius: 999px;
+    background: linear-gradient(180deg, #f08cbc, var(--pink-deep));
+    box-shadow: 0 8px 20px rgba(201, 82, 139, .4), inset 0 1px 0 rgba(255, 255, 255, .5);
+    color: #fff;
+    font-weight: 700;
+    font-size: clamp(15px, 4.6cqw, 19px);
+    letter-spacing: .08em;
+    text-decoration: none;
+    animation: cta-bounce 1.8s ease-in-out infinite;
+  }
+  .cta svg { width: 1.1em; height: 1.1em; }
+  @keyframes cta-bounce {
+    0%, 70%, 100% { transform: translateY(0); }
+    78% { transform: translateY(-5px); }
+    86% { transform: translateY(0); }
+    92% { transform: translateY(-2px); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .gacha .handle, .arrow, .arrow .flow, .tap-ring, .hint, .aura::before, .ticket-shine::before, .ticket-shine::after, .ticket-glow, .ticket-glitter i, .ticket-stars svg, .cta, .capsule .rb, .capsule .sh, .capsule .rainbow-glow, .aurora, .aurora i, .burst-rays { animation: none; }
+  }
+</style>
+</head>
+<body>
+<main class="app" id="app" aria-label="タップしてガチャを回す">
+  <div class="stage">
+    <h1 style="margin:0"><img class="title" src="assets/title.webp" alt="最大18ヶ月分の施術チケットが当たる 次世代医療ダイエット無料チケットガチャ"></h1>
+    <div class="floor-shadow"></div>
+    <div class="gacha" id="gacha">
+      <img class="body" src="assets/gacha.webp" alt="Lieto Clinic ガチャガチャ">
+      <canvas class="caps" id="caps"></canvas>
+      <svg class="glass" viewBox="0 0 1024 1536" aria-hidden="true">
+        <defs><filter id="glassBlur" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="5"/></filter></defs>
+        <g fill="none" stroke="#fff" stroke-linecap="round" filter="url(#glassBlur)">
+          <path d="M 160 700 A 372 372 0 0 1 230 330" stroke-width="18" stroke-opacity=".6"/>
+          <path d="M 800 318 A 372 372 0 0 1 866 420" stroke-width="12" stroke-opacity=".55"/>
+          <path d="M 868 690 A 372 372 0 0 1 820 790" stroke-width="8" stroke-opacity=".4"/>
+        </g>
+      </svg>
+      <img class="label" src="assets/label.webp" alt="">
+      <svg class="hub" viewBox="0 0 80 80" aria-hidden="true">
+        <defs>
+          <radialGradient id="hubG" cx="42%" cy="38%" r="70%">
+            <stop offset="0" stop-color="#f4f5f7"/>
+            <stop offset=".55" stop-color="#c9ccd2"/>
+            <stop offset="1" stop-color="#9ea3ab"/>
+          </radialGradient>
+        </defs>
+        <circle cx="40" cy="40" r="38" fill="url(#hubG)" stroke="#8d929a" stroke-width="2"/>
+        <circle cx="40" cy="40" r="33" fill="none" stroke="#fff" stroke-opacity=".75" stroke-width="1.5"/>
+        <circle cx="40" cy="40" r="10" fill="#b5b9c0" stroke="#8d929a" stroke-width="1.5"/>
+      </svg>
+      <img class="handle" id="handle" src="assets/handle.webp" alt="">
+      <div class="tap-ring" id="tapRing"></div>
+      <svg class="arrow" id="arrow" viewBox="-130 -130 260 260" aria-hidden="true">
+        <defs>
+          <linearGradient id="arrowG" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stop-color="#f9a9cd"/>
+            <stop offset="1" stop-color="#d95b98"/>
+          </linearGradient>
+        </defs>
+        <!-- 取手の回転中心を原点に、上半分を時計回りに回る弧 -->
+        <path d="M -90.6 -42.3 A 100 100 0 0 1 80 -60" fill="none" stroke="#fff" stroke-width="36" stroke-linecap="round"/>
+        <path d="M -90.6 -42.3 A 100 100 0 0 1 80 -60" fill="none" stroke="url(#arrowG)" stroke-width="25" stroke-linecap="round"/>
+        <path class="flow" d="M -90.6 -42.3 A 100 100 0 0 1 80 -60" fill="none" stroke="#fff" stroke-opacity=".8" stroke-width="5.5" stroke-linecap="round"/>
+        <path d="M 103 -84 L 105 -24 L 51 -43 Z" fill="#d95b98" stroke="#fff" stroke-width="9" stroke-linejoin="round" paint-order="stroke"/>
+      </svg>
+    </div>
+  </div>
+
+  <div class="hint" id="hint">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v4h-4"/>
+    </svg>
+    タップしてガチャを回そう
+  </div>
+
+  <div class="burst" id="burst"><div class="burst-rays"></div><div class="burst-glow"></div><div class="burst-ring"></div><div class="burst-ring"></div></div>
+  <div class="veil" id="veil"></div>
+  <div class="aurora" id="aurora"><i></i><i></i><i></i></div>
+  <canvas class="aurora-cv" id="auroraCv"></canvas>
+  <div class="aura" id="aura"></div>
+  <div class="open-rays" id="openRays"></div>
+
+  <div class="capsule" id="capsule">
+    <div class="rainbow-glow" id="capGlow"></div>
+    <div class="sparkles" id="capSparkles"><svg viewBox="0 0 24 24" style="left:6%;top:14%;animation-delay:0s"><path d="M12 0C13 8 16 11 24 12C16 13 13 16 12 24C11 16 8 13 0 12C8 11 11 8 12 0Z"/></svg><svg viewBox="0 0 24 24" style="right:4%;top:24%;animation-delay:0.35s"><path d="M12 0C13 8 16 11 24 12C16 13 13 16 12 24C11 16 8 13 0 12C8 11 11 8 12 0Z"/></svg><svg viewBox="0 0 24 24" style="left:14%;bottom:8%;animation-delay:0.7s"><path d="M12 0C13 8 16 11 24 12C16 13 13 16 12 24C11 16 8 13 0 12C8 11 11 8 12 0Z"/></svg><svg viewBox="0 0 24 24" style="right:12%;bottom:6%;animation-delay:0.15s"><path d="M12 0C13 8 16 11 24 12C16 13 13 16 12 24C11 16 8 13 0 12C8 11 11 8 12 0Z"/></svg><svg viewBox="0 0 24 24" style="left:44%;top:0;animation-delay:0.5s"><path d="M12 0C13 8 16 11 24 12C16 13 13 16 12 24C11 16 8 13 0 12C8 11 11 8 12 0Z"/></svg><svg viewBox="0 0 24 24" style="right:0;top:58%;width:10%;height:10%;animation-delay:0.85s"><path d="M12 0C13 8 16 11 24 12C16 13 13 16 12 24C11 16 8 13 0 12C8 11 11 8 12 0Z"/></svg><svg viewBox="0 0 24 24" style="left:0;top:52%;width:11%;height:11%;animation-delay:0.25s"><path d="M12 0C13 8 16 11 24 12C16 13 13 16 12 24C11 16 8 13 0 12C8 11 11 8 12 0Z"/></svg></div>
+    <div class="half bottom" id="capBottom">
+      <img src="assets/capsule-bottom.webp" alt="">
+      <div class="rb-clip"><div class="rb"></div></div>
+      <div class="rb-clip soft"><div class="rb"></div></div>
+      <div class="rb-clip shine"><div class="sh"></div></div>
+    </div>
+    <img class="ticket-mini" id="ticketMini" src="assets/capsule-ticket.webp" alt="">
+    <div class="half top" id="capTop">
+      <img src="assets/capsule-top.webp" alt="">
+      <div class="rb-clip"><div class="rb"></div></div>
+      <div class="rb-clip soft"><div class="rb"></div></div>
+      <div class="rb-clip shine"><div class="sh"></div></div>
+    </div>
+    <div class="half whole" id="capWhole">
+      <img src="assets/capsule-whole.webp" alt="">
+      <div class="rb-clip"><div class="rb"></div></div>
+      <div class="rb-clip soft"><div class="rb"></div></div>
+      <div class="rb-clip shine"><div class="sh"></div></div>
+    </div>
+  </div>
+
+  <div class="flash" id="flash"></div>
+  <canvas class="fx" id="fx"></canvas>
+
+  <div class="result" id="result">
+    <div class="congrats" id="congrats">
+      <div class="congrats-en">CONGRATULATIONS</div>
+    </div>
+    <div class="ticket" id="ticket">
+      <div class="ticket-glow"></div>
+      <img class="ticket-img" src="assets/ticket.webp" alt="SPECIAL TICKET 次世代医療ダイエット 月々9,600円〜が18ヶ月分0円 ※申し込みページ内に適用条件記載 ※他キャンペーンと併用不可 ※当社指定の信販会社をご利用した分割料金">
+      <div class="ticket-glitter"><i></i><i></i></div>
+      <div class="ticket-shine"></div>
+      <div class="ticket-stars"><svg viewBox="0 0 24 24" style="left:7%;top:9%;width:5%;animation-delay:0s"><path d="M12 0C13 8 16 11 24 12C16 13 13 16 12 24C11 16 8 13 0 12C8 11 11 8 12 0Z"/></svg><svg viewBox="0 0 24 24" style="left:30%;top:7.5%;width:3%;animation-delay:0.5s"><path d="M12 0C13 8 16 11 24 12C16 13 13 16 12 24C11 16 8 13 0 12C8 11 11 8 12 0Z"/></svg><svg viewBox="0 0 24 24" style="left:63%;top:7%;width:3.5%;animation-delay:1.1s"><path d="M12 0C13 8 16 11 24 12C16 13 13 16 12 24C11 16 8 13 0 12C8 11 11 8 12 0Z"/></svg><svg viewBox="0 0 24 24" style="left:93%;top:10%;width:5%;animation-delay:0.3s"><path d="M12 0C13 8 16 11 24 12C16 13 13 16 12 24C11 16 8 13 0 12C8 11 11 8 12 0Z"/></svg><svg viewBox="0 0 24 24" style="left:11%;top:30%;width:3%;animation-delay:0.8s"><path d="M12 0C13 8 16 11 24 12C16 13 13 16 12 24C11 16 8 13 0 12C8 11 11 8 12 0Z"/></svg><svg viewBox="0 0 24 24" style="left:88.5%;top:28%;width:3.5%;animation-delay:1.0s"><path d="M12 0C13 8 16 11 24 12C16 13 13 16 12 24C11 16 8 13 0 12C8 11 11 8 12 0Z"/></svg><svg viewBox="0 0 24 24" style="left:96%;top:44%;width:2.6%;animation-delay:1.45s"><path d="M12 0C13 8 16 11 24 12C16 13 13 16 12 24C11 16 8 13 0 12C8 11 11 8 12 0Z"/></svg><svg viewBox="0 0 24 24" style="left:94%;top:72%;width:4%;animation-delay:0.6s"><path d="M12 0C13 8 16 11 24 12C16 13 13 16 12 24C11 16 8 13 0 12C8 11 11 8 12 0Z"/></svg><svg viewBox="0 0 24 24" style="left:6%;top:78%;width:4.5%;animation-delay:1.3s"><path d="M12 0C13 8 16 11 24 12C16 13 13 16 12 24C11 16 8 13 0 12C8 11 11 8 12 0Z"/></svg><svg viewBox="0 0 24 24" style="left:11%;top:62%;width:2.6%;animation-delay:0.15s"><path d="M12 0C13 8 16 11 24 12C16 13 13 16 12 24C11 16 8 13 0 12C8 11 11 8 12 0Z"/></svg><svg viewBox="0 0 24 24" style="left:28%;top:96%;width:3%;animation-delay:0.2s"><path d="M12 0C13 8 16 11 24 12C16 13 13 16 12 24C11 16 8 13 0 12C8 11 11 8 12 0Z"/></svg><svg viewBox="0 0 24 24" style="left:52%;top:96.5%;width:2.6%;animation-delay:1.2s"><path d="M12 0C13 8 16 11 24 12C16 13 13 16 12 24C11 16 8 13 0 12C8 11 11 8 12 0Z"/></svg><svg viewBox="0 0 24 24" style="left:77%;top:96%;width:3.5%;animation-delay:0.9s"><path d="M12 0C13 8 16 11 24 12C16 13 13 16 12 24C11 16 8 13 0 12C8 11 11 8 12 0Z"/></svg><svg viewBox="0 0 24 24" style="left:88.5%;top:88%;width:3%;animation-delay:0.4s"><path d="M12 0C13 8 16 11 24 12C16 13 13 16 12 24C11 16 8 13 0 12C8 11 11 8 12 0Z"/></svg></div>
+    </div>
+    <div class="actions" id="actions">
+      <a class="cta" href="https://sb-lietoclinic01.discover-news.tokyo/ab/djOvlLWbBDEjAcErjBTbg" id="cta">
+        チケットを受け取る
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+      </a>
+    </div>
+  </div>
+</main>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const app = $('app'), gacha = $('gacha'), handle = $('handle'), caps = $('caps');
+  const rnd = (a, b) => a + Math.random() * (b - a);
+  const capsule = $('capsule'), capTop = $('capTop'), capBottom = $('capBottom'), capWhole = $('capWhole'), ticketMini = $('ticketMini'), capGlow = $('capGlow'), capSparkles = $('capSparkles');
+  const rbColor = [...document.querySelectorAll('.capsule .rb-clip:not(.soft):not(.shine)')], rbShine = [...document.querySelectorAll('.capsule .rb-clip.shine')], rbSoft = [...document.querySelectorAll('.capsule .rb-clip.soft')];
+  const veil = $('veil'), aura = $('aura'), aurora = $('aurora'), burst = $('burst'), flash = $('flash'), ticket = $('ticket'), actions = $('actions'), congrats = $('congrats'), openRays = $('openRays');
+  const idleEls = [$('hint'), $('arrow'), $('tapRing')];
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // 背景のオーロラ（色の帯＋カーテン）。true に戻せば復活する
+  const SHOW_AURORA = false;
+  if (!SHOW_AURORA) app.classList.add('no-aurora');
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  const anim = (el, kf, opt) => el.animate(kf, { fill: 'forwards', ...opt }).finished;
+
+  // 画像を読み込んでから表示
+  Promise.all(['assets/bg.webp', 'assets/title.webp', 'assets/ticket.webp', 'assets/gacha.webp', 'assets/capsule-sprites.webp', 'assets/capsule-top.webp', 'assets/capsule-bottom.webp', 'assets/capsule-whole.webp', 'assets/capsule-ticket.webp', 'assets/label.webp', 'assets/handle.webp']
+    .map((src) => new Promise((r) => { const i = new Image(); i.onload = i.onerror = r; i.src = src; })))
+    .then(() => {
+      app.classList.add('is-ready');
+      if (location.hash === '#autoplay') app.click();   // 動作確認用
+    });
+
+  let state = 'idle', gen = 0;
+  // 画面上のカプセルの中心と半径（WAAPI で動いている最中の見た目の位置）
+  const capC = () => { const r = capsule.getBoundingClientRect(), a = app.getBoundingClientRect(); return { x: r.left - a.left + r.width / 2, y: r.top - a.top + r.height / 2, r: r.width / 2 }; };
+  app.addEventListener('click', (e) => {
+    if (state !== 'idle' || e.target.closest('.actions')) return;
+    state = 'playing';
+    play().then(() => { state = 'done'; });
+  });
+
+  function outletCenter() {
+    const r = gacha.getBoundingClientRect(), a = app.getBoundingClientRect();
+    return { x: r.left - a.left + r.width * (508.5 / 1024), y: r.top - a.top + r.height * (1268 / 1536), w: r.width * (150 / 1024) };
+  }
+
+  async function play() {
+    idleEls.forEach((el) => el.classList.add('fade-out'));
+    [handle, gacha, caps].forEach((el) => { el.style.animation = 'none'; });
+
+    const size = capsule.offsetWidth;
+    const aw = app.clientWidth, ah = app.clientHeight;
+    const o = outletCenter();
+    const s0 = (o.w * 0.86) / size;
+    const cx = aw / 2, cy = ah * 0.42;
+    const at = (x, y, s, r = 0) => `translate(${x - size / 2}px, ${y - size / 2}px) scale(${s}) rotate(${r}deg)`;
+
+    if (reduced) {
+      capsule.style.opacity = 0;
+      curtain.still(.5);
+      veil.style.opacity = 1; aura.style.opacity = 1; aurora.style.opacity = .55;
+      ticket.style.opacity = 1;
+      ticket.style.transform = 'rotate(-5deg)';
+      congrats.style.opacity = 1;
+      actions.classList.add('show');
+      return;
+    }
+
+    // 1. 取手がまわる（2段階でカチッ、カチッ）
+    const turn = anim(handle, [
+      { transform: 'rotate(0deg)', easing: 'cubic-bezier(.5,0,.3,1.3)' },
+      { transform: 'rotate(180deg)', offset: .42 },
+      { transform: 'rotate(180deg)', offset: .52, easing: 'cubic-bezier(.5,0,.3,1.3)' },
+      { transform: 'rotate(360deg)' },
+    ], { duration: 1500 });
+
+    // 2. 本体が揺れる
+    const SWINGS = 12;
+    const shake = wait(250).then(() => anim(gacha, [{ transform: 'translate(0,0) rotate(0)' }].concat(
+      Array.from({ length: SWINGS }, (_, i) => {
+        const k = (i + 1) / (SWINGS + 1);
+        const amp = Math.sin(Math.PI * Math.min(k * 1.25, 1) ** .8) * .75 + .5;   // 立ち上がり→ピーク→収まる
+        const dir = i % 2 ? 1 : -1;
+        return { transform: `translate(${dir * (1 + 1.2 * amp)}px,${i % 2 ? -1 * amp : 0}px) rotate(${dir * (.25 + .55 * amp)}deg)`, offset: k };
+      }),
+      [{ transform: 'translate(0,0) rotate(0)' }]
+    ), { duration: 1900, easing: 'ease-in-out' }));
+
+    // 3. 中のカプセルが1個ずつ転がる
+    const stir = wait(200).then(() => pile.stir(1800));
+
+    await Promise.all([turn, shake, stir]);
+    pile.take();   // 1個が取り出し口へ落ちる
+
+    // 4. 取り出し口からカプセルがポンッと出てくる（ここでは光らせない）
+    await anim(capsule, [
+      { opacity: 0, transform: at(o.x, o.y - o.w * .15, s0 * .4) },
+      { opacity: 1, transform: at(o.x, o.y + o.w * .05, s0 * 1.25), offset: .45 },
+      { opacity: 1, transform: at(o.x, o.y + o.w * .02, s0 * .92), offset: .7 },
+      { opacity: 1, transform: at(o.x, o.y + o.w * .06, s0 * 1.04), offset: .86 },
+      { opacity: 1, transform: at(o.x, o.y + o.w * .06, s0) },
+    ], { duration: 480, easing: 'ease-out' });
+    await wait(150);
+
+    // 5. ふわっと浮いて画面中央へ（まだ光らせない）
+    anim(veil, [{ opacity: 0 }, { opacity: 1 }], { duration: 750, easing: 'ease-out' });
+    await anim(capsule, [
+      { transform: at(o.x, o.y + o.w * .06, s0) },
+      { transform: at((o.x + cx) / 2, o.y - (o.y - cy) * .55, (s0 + 1) / 2, -8), offset: .45 },
+      { transform: at(cx, cy - 10, 1.04, 4), offset: .8 },
+      { transform: at(cx, cy, 1, 0) },
+    ], { duration: 880, easing: 'cubic-bezier(.33,0,.2,1)' });
+
+    // 6. 中央に来てから光る：光の玉・リング・光線・星・オーロラ
+    const bw = burst.offsetWidth;
+    const bT = `translate(${cx - bw / 2}px, ${cy - bw / 2}px)`;
+    anim(burst, [
+      { opacity: 0, transform: `${bT} scale(.2)` },
+      { opacity: 1, transform: `${bT} scale(1.15)`, offset: .3 },
+      { opacity: 1, transform: `${bT} scale(1)` },
+    ], { duration: 700, easing: 'cubic-bezier(.2,.8,.3,1)' });
+    burst.querySelectorAll('.burst-ring').forEach((el, i) => anim(el, [
+      { opacity: 1, transform: 'scale(.3)' },
+      { opacity: 0, transform: 'scale(2.6)' },
+    ], { duration: 850, delay: 60 + i * 220, easing: 'cubic-bezier(.2,.7,.3,1)' }));
+    anim(aurora, [{ opacity: 0 }, { opacity: .9 }], { duration: 1200, easing: 'ease-out' });
+    curtain.to(.8, 1400);   // オーロラのカーテンがゆらめきながら現れる
+    anim(aura, [{ opacity: 0, transform: 'scale(.4)' }, { opacity: 1, transform: 'scale(1)' }], { duration: 1000, easing: 'ease-out' });
+    confetti.sparkle(cx, cy, 80, 0, Math.PI, [220, 720]);
+    rbShine.forEach((el) => anim(el, [{ opacity: 0 }, { opacity: 1, offset: .4 }, { opacity: 0 }], { duration: 600 }));
+    anim(capsule, [
+      { transform: at(cx, cy, 1, 0) },
+      { transform: at(cx, cy, 1.1, 0), offset: .35 },
+      { transform: at(cx, cy, 1, 0) },
+    ], { duration: 520, easing: 'ease-out' });
+    await wait(620);
+    anim(burst, [{ opacity: 1 }, { opacity: 0 }], { duration: 900, easing: 'ease-in-out' });
+
+    // ふわふわ漂いながら虹色に変わる
+    rbColor.forEach((el) => anim(el, [{ opacity: 0 }, { opacity: 1 }], { duration: 1500, easing: 'ease-in-out' }));
+    rbSoft.forEach((el) => anim(el, [{ opacity: 0 }, { opacity: .42 }], { duration: 1500, delay: 250, easing: 'ease-in-out' }));
+    rbShine.forEach((el) => anim(el, [{ opacity: 0 }, { opacity: 1 }], { duration: 1100, easing: 'ease-in-out' }));
+    anim(aurora, [{ opacity: 1 }], { duration: 1100, easing: 'ease-out' });
+    anim(capGlow, [{ opacity: 0, transform: 'scale(.6)' }, { opacity: 1, transform: 'scale(1)' }], { duration: 1500, easing: 'ease-out' });
+    anim(capSparkles, [{ opacity: 0 }, { opacity: 1 }], { duration: 600, delay: 400, easing: 'ease-out' });
+    // まわりで光がチカチカ瞬く
+    confetti.emit((dt, e) => {
+      for (e.acc += dt * 16; e.acc >= 1; e.acc--) {
+        const c = capC(), ang = rnd(0, Math.PI * 2), d = c.r * rnd(1.15, 1.9);
+        confetti.sparkle(c.x + Math.cos(ang) * d, c.y + Math.sin(ang) * d, 1, -Math.PI / 2, .6, [5, 25], { size: [5, 12], ttl: [.6, 1], g: -10, drag: 1 });
+      }
+    }, 1400);
+    await anim(capsule, [
+      { transform: at(cx, cy, 1, 0) },
+      { transform: at(cx, cy - 12, 1.02, -3), offset: .5 },
+      { transform: at(cx, cy, 1, 0) },
+    ], { duration: 1400, easing: 'ease-in-out' });
+
+    // 割れる直前にプルプル：光の粒がカプセルへ吸い込まれ、オーロラが強まる
+    confetti.emit((dt, e) => {
+      for (e.acc += dt * 70; e.acc >= 1; e.acc--) {
+        const c = capC(), ang = rnd(0, Math.PI * 2), d = c.r * rnd(1.8, 2.8), T = .38, v = (d - c.r * .3) / T;
+        confetti.sparkle(c.x + Math.cos(ang) * d, c.y + Math.sin(ang) * d, 1, ang + Math.PI, 0, [v, v], { size: [4, 10], ttl: [T, T], g: 0, drag: 0 });
+      }
+    }, 540);
+    curtain.to(1, 600);
+    await anim(capsule, Array.from({ length: 11 }, (_, i) => {
+      const k = i / 10, amp = 2 + k * 5;
+      return { transform: at(cx + (i % 2 ? amp : -amp), cy, 1 + k * .06, (i % 2 ? 1 : -1) * amp * .6) };
+    }).concat([{ transform: at(cx, cy, 1.08, 0) }]), { duration: 600, easing: 'linear' });
+
+    // 7. パカッと割れる + 花吹雪 + チケット
+    anim(flash, [{ opacity: 0 }, { opacity: 1, offset: .25 }, { opacity: 0 }], { duration: 650, easing: 'ease-out' });
+    // 光条が広がる＋大きな十字の光＋衝撃波リング3重＋光の粒が飛び散る
+    anim(openRays, [
+      { opacity: 0, transform: 'scale(.25) rotate(0deg)' },
+      { opacity: 1, transform: 'scale(.9) rotate(8deg)', offset: .18 },
+      { opacity: 0, transform: 'scale(1.5) rotate(24deg)' },
+    ], { duration: 1400, easing: 'cubic-bezier(.2,.7,.3,1)' });
+    confetti.flare(cx, cy, aw * .2);
+    confetti.ring(cx, cy, size * .3, aw * .85, { w: 9, ttl: .8 });
+    confetti.ring(cx, cy, size * .25, aw * .65, { w: 6, ttl: .85, delay: .09, color: '#ffc4e4' });
+    confetti.ring(cx, cy, size * .2, aw * 1.05, { w: 4, ttl: 1.05, delay: .18, color: '#c9dcff' });
+    confetti.sparkle(cx, cy, 56, 0, Math.PI, [240, 900], { size: [6, 15], ttl: [.9, 1.7], g: 50, drag: 2.2 });
+    { const my = gen; wait(900).then(() => { if (gen === my) curtain.to(.6, 2400); }); }   // 余韻としてチケットの後ろでゆらめき続ける
+    anim(capGlow, [{ opacity: 1, transform: 'scale(1)' }, { opacity: 0, transform: 'scale(1.6)' }], { duration: 400, easing: 'ease-out' });
+    anim(capSparkles, [{ opacity: 1, transform: 'scale(1)' }, { opacity: 0, transform: 'scale(1.5)' }], { duration: 450, easing: 'ease-out' });
+    // 1枚絵 → 上下の半球＋中のチケットに差し替え。チケットは大きくなりながら本物のチケットへつながる
+    anim(capWhole, [{ opacity: 1 }, { opacity: 0 }], { duration: 50 });
+    anim(ticketMini, [
+      { opacity: 1, transform: 'translateY(0) scale(1) rotate(0deg)' },
+      { opacity: 1, transform: 'translateY(20%) scale(1.7) rotate(-3deg)', offset: .45 },
+      { opacity: 0, transform: 'translateY(34%) scale(3) rotate(-5deg)' },
+    ], { duration: 520, easing: 'cubic-bezier(.2,.7,.3,1)' });
+    anim(capTop, [
+      { transform: 'translate(0,0) rotate(0)', opacity: 1 },
+      { transform: 'translate(-28%,-60%) rotate(-38deg)', opacity: 1, offset: .5 },
+      { transform: 'translate(-48%,-95%) rotate(-60deg)', opacity: 0 },
+    ], { duration: 900, easing: 'cubic-bezier(.2,.7,.3,1)' });
+    anim(capBottom, [
+      { transform: 'translate(0,0) rotate(0)', opacity: 1 },
+      { transform: 'translate(26%,48%) rotate(30deg)', opacity: 1, offset: .5 },
+      { transform: 'translate(40%,90%) rotate(52deg)', opacity: 0 },
+    ], { duration: 900, easing: 'cubic-bezier(.2,.7,.3,1)' });
+    anim(aurora, [{ opacity: 1 }, { opacity: .55 }], { duration: 1600, delay: 400, easing: 'ease-in-out' });
+    confetti.burst(cx, cy);
+    confetti.crackers();
+    confetti.rain(5200);
+
+    await wait(120);
+    await anim(ticket, [
+      { opacity: 0, transform: 'scale(.33) rotate(0deg)' },
+      { opacity: 1, transform: 'scale(1.12) rotate(-3deg)', offset: .6 },
+      { opacity: 1, transform: 'scale(.97) rotate(-6deg)', offset: .82 },
+      { opacity: 1, transform: 'scale(1) rotate(-5deg)' },
+    ], { duration: 820, easing: 'cubic-bezier(.3,1.2,.5,1)' });
+    // チケットの縁のまわりで光が瞬き続ける（canvas はチケットより奥なので文字には重ならない）
+    confetti.emit((dt, e) => {
+      for (e.acc += dt * 22; e.acc >= 1; e.acc--) {
+        const r = ticket.getBoundingClientRect(), a = app.getBoundingClientRect(), off = rnd(2, 14);
+        let t = rnd(0, 2 * (r.width + r.height)), x, y;
+        if (t < r.width) { x = r.left + t; y = r.top - off; }
+        else if ((t -= r.width) < r.height) { x = r.right + off; y = r.top + t; }
+        else if ((t -= r.height) < r.width) { x = r.right - t; y = r.bottom + off; }
+        else { x = r.left - off; y = r.bottom - (t - r.width); }
+        confetti.sparkle(x - a.left, y - a.top, 1, -Math.PI / 2, .5, [0, 12], { size: [3.5, 7.5], ttl: [.8, 1.3], g: -6, drag: 1 });
+      }
+    });
+    anim(congrats, [
+      { opacity: 0, transform: 'translateY(-70%) scale(.8)' },
+      { opacity: 1, transform: 'translateY(-106%) scale(1.06)', offset: .6 },
+      { opacity: 1, transform: 'translateY(-100%) scale(1)' },
+    ], { duration: 600, easing: 'ease-out' });
+    ticket.animate([
+      { transform: 'translateY(0) rotate(0)' },
+      { transform: 'translateY(-6px) rotate(-.6deg)' },
+      { transform: 'translateY(0) rotate(0)' },
+    ], { duration: 3200, iterations: Infinity, easing: 'ease-in-out', composite: 'add' });
+    await wait(250);
+    actions.classList.add('show');
+  }
+
+  // ===== ガラス球の中のカプセル（1個ずつ物理演算） =====
+  const pile = (() => {
+    const cv = caps, ctx = cv.getContext('2d');
+    // 座標はすべてガチャ元画像（1024x1536）基準
+    const OX = 110, OY = 180, CW = 800, CH = 720;
+    const GX = 510, GY = 565, GR = 392, FLOOR = 889, TOP = 292;
+    const G = 3200, REST = .25;
+    const SP = 176, SR = 84;                       // スプライト1コマと、その中のカプセル半径
+    const sprite = new Image(); sprite.src = 'assets/capsule-sprites.webp';
+    const LAYERS = [
+      { n: 16, r: [62, 68], alpha: .72 },          // 奥の列（薄く）
+      { n: 14, r: [76, 83], alpha: 1 },            // 手前の列
+    ];
+    let layers = [], stirUntil = 0, lastKick = 0, prevPhase = 0, dpr = 1, scale = 1;
+
+    function rng(seed) {
+      return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+    }
+    const rnd = (a, b) => a + Math.random() * (b - a);
+
+    function build() {
+      const R = rng(7);
+      layers = LAYERS.map((L, li) => ({
+        alpha: L.alpha,
+        bodies: Array.from({ length: L.n }, (_, i) => {
+          const a0 = (R() - .5) * .7;
+          return {
+            x: GX + (R() - .5) * 560, y: 330 + R() * 420 - li * 40,
+            vx: 0, vy: 0, r: L.r[0] + R() * (L.r[1] - L.r[0]),
+            v: (i + li * 3) % 6, a: a0, a0, s: 1,
+          };
+        }),
+      }));
+      for (let i = 0; i < 240 * 4; i++) step(1 / 240);   // 事前に積もらせておく
+    }
+
+    function step(dt) {
+      for (const L of layers) {
+        const B = L.bodies;
+        for (const b of B) {
+          b.vy += G * dt;
+          if (performance.now() < stirUntil) {
+            // 取手と同じ時計回りにかき混ぜる
+            const dx = b.x - GX, dy = b.y - GY, d = Math.hypot(dx, dy) || 1;
+            b.vx += (-dy / d) * 5200 * dt;
+            b.vy += (dx / d) * 5200 * dt - 2600 * dt;
+          }
+          const k = Math.exp(-.8 * dt);
+          b.vx *= k; b.vy *= k;
+          b.x += b.vx * dt; b.y += b.vy * dt;
+        }
+        for (let it = 0; it < 3; it++) {
+          for (let i = 0; i < B.length; i++) {
+            const p = B[i];
+            for (let j = i + 1; j < B.length; j++) {
+              const q = B[j];
+              const dx = q.x - p.x, dy = q.y - p.y, min = (p.r * p.s + q.r * q.s) * .97;
+              const d2 = dx * dx + dy * dy;
+              if (d2 >= min * min || d2 === 0) continue;
+              const d = Math.sqrt(d2), nx = dx / d, ny = dy / d, push = (min - d) / 2;
+              p.x -= nx * push; p.y -= ny * push; q.x += nx * push; q.y += ny * push;
+              const rv = (q.vx - p.vx) * nx + (q.vy - p.vy) * ny;
+              if (rv < 0) {
+                const imp = -(1 + REST) * rv / 2;
+                p.vx -= imp * nx; p.vy -= imp * ny; q.vx += imp * nx; q.vy += imp * ny;
+              }
+            }
+            // ガラス球の内壁
+            const r = p.r * p.s, dx = p.x - GX, dy = p.y - GY, d = Math.hypot(dx, dy);
+            if (d > GR - r) {
+              const nx = dx / d, ny = dy / d;
+              p.x = GX + nx * (GR - r); p.y = GY + ny * (GR - r);
+              const vn = p.vx * nx + p.vy * ny;
+              if (vn > 0) { p.vx -= (1 + REST) * vn * nx; p.vy -= (1 + REST) * vn * ny; p.vx *= .97; p.vy *= .97; }
+            }
+            if (p.y + r > FLOOR) { p.y = FLOOR - r; if (p.vy > 0) p.vy *= -REST; p.vx *= .96; }
+            if (p.y - r < TOP) { p.y = TOP + r; if (p.vy < 0) p.vy *= -REST; }
+          }
+        }
+        for (const b of B) {
+          // 転がった分だけ少し回して、元の向きへゆっくり戻す（ハイライトの向きを保つ）
+          b.a += (b.vx / b.r) * dt * .6;
+          b.a += (b.a0 - b.a) * (1 - Math.exp(-1.2 * dt));
+          b.a = Math.max(b.a0 - .8, Math.min(b.a0 + .8, b.a));
+        }
+      }
+    }
+
+    // 待機中の動き：全体を一斉に跳ねさせず、ばらばらのタイミングで少しずつ動かす
+    //  - 取手がクイッと動く瞬間（handle-idle の 66%）に、取手に近い下の方のカプセルだけ時間差で小さく押す
+    //  - それとは別に、ときどきランダムな1〜2個がころっと動く
+    let nudges = [], nextAmbient = 0;
+    function push(b, vx, vy, delay) { nudges.push({ at: performance.now() + delay, b, vx, vy }); }
+    function idleKick() {
+      const an = handle.getAnimations().find((a) => a.animationName === 'handle-idle');
+      if (!an || an.currentTime == null) { prevPhase = 0; nudges = []; return; }
+      const now = performance.now();
+      const phase = (an.currentTime % 2600) / 2600;
+      if (prevPhase < .665 && phase >= .665) {
+        for (const L of layers) for (const b of L.bodies) {
+          const near = b.y > GY + 60 && Math.abs(b.x - GX) < 240;
+          if (near && Math.random() < .75) push(b, rnd(-50, 70), -rnd(90, 210), rnd(0, 220));
+        }
+      }
+      prevPhase = phase;
+      if (now > nextAmbient) {
+        const n = Math.random() < .35 ? 2 : 1;
+        for (let i = 0; i < n; i++) {
+          const L = layers[Math.random() < .6 ? 1 : 0];
+          const b = L.bodies[(Math.random() * L.bodies.length) | 0];
+          if (b.s === 1) push(b, rnd(-90, 90), -rnd(60, 150), i * rnd(80, 200));
+        }
+        nextAmbient = now + rnd(450, 1200);
+      }
+      nudges = nudges.filter((u) => {
+        if (now < u.at) return true;
+        u.b.vx += u.vx; u.b.vy += u.vy;
+        return false;
+      });
+    }
+
+    function resize() {
+      dpr = Math.min(devicePixelRatio || 1, 2);
+      const w = cv.clientWidth, h = cv.clientHeight;
+      if (!w) return;
+      cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+      scale = w / CW;
+    }
+
+    function draw() {
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, cv.width, cv.height);
+      const k = scale * dpr;
+      ctx.setTransform(k, 0, 0, k, -OX * k, -OY * k);
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(GX, GY, GR + 4, 0, Math.PI * 2);
+      ctx.clip();
+      ctx.beginPath();
+      ctx.rect(OX, TOP - 10, CW, FLOOR + 2 - (TOP - 10));
+      ctx.clip();
+      if (sprite.complete && sprite.naturalWidth) {
+        for (const L of layers) {
+          ctx.globalAlpha = L.alpha;
+          for (const b of L.bodies) {
+            if (b.s <= 0) continue;
+            const r = b.r * b.s, size = r * SP / SR;
+            ctx.save();
+            ctx.translate(b.x, b.y);
+            ctx.rotate(b.a);
+            ctx.drawImage(sprite, b.v * SP, 0, SP, SP, -size / 2, -size / 2, size, size);
+            ctx.restore();
+          }
+        }
+      }
+      ctx.restore();
+    }
+
+    let last = performance.now();
+    function tick(now) {
+      let t = Math.min((now - last) / 1000, .05); last = now;
+      if (!reduced) {
+        idleKick();
+        while (t > 0) { const h = Math.min(t, 1 / 240); step(h); t -= h; }
+      }
+      draw();
+      requestAnimationFrame(tick);
+    }
+
+    build();
+    resize();
+    addEventListener('resize', resize);
+    requestAnimationFrame(tick);
+
+    return {
+      stir: (ms) => { stirUntil = performance.now() + ms; return wait(ms + 250); },
+      // 下の方・中央寄りの手前のカプセルを1個、取り出し口へ落として消す
+      take() {
+        const B = layers[1].bodies.filter((b) => b.s === 1);
+        const b = B.sort((p, q) => (q.y - Math.abs(q.x - GX) * .5) - (p.y - Math.abs(p.x - GX) * .5))[0];
+        if (!b) return;
+        const t0 = performance.now();
+        (function shrink() {
+          const k = Math.min((performance.now() - t0) / 280, 1);
+          b.s = 1 - k; b.vy += 60;
+          if (k < 1) requestAnimationFrame(shrink); else b.s = 0;
+        })();
+      },
+    };
+  })();
+
+  // ===== 花吹雪（canvas） =====
+  const confetti = (() => {
+    const cv = $('fx'), ctx = cv.getContext('2d');
+    // オーロラと同じ ピンク／ラベンダー／水色／ゴールド＋白
+    const COLORS = ['#f9b8d3', '#f48fb8', '#ffffff', '#e8d3f7', '#c4a6ee', '#f3d27a', '#ffe9ae', '#ffd1e3', '#bfe3fb', '#9fd0f3'];
+    const STAR_CONF = ['#ffd76e', '#f3c6ff', '#ffb3d6', '#a9d8f7', '#fff2c2'];
+    let parts = [], raf = 0, last = 0, rainUntil = 0, rainForever = false, dpr = 1, W = 0, H = 0;
+
+    function resize() {
+      dpr = Math.min(devicePixelRatio || 1, 2);
+      W = app.clientWidth; H = app.clientHeight;
+      cv.width = W * dpr; cv.height = H * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    addEventListener('resize', resize); resize();
+
+    const rnd = (a, b) => a + Math.random() * (b - a);
+    const pick = (a) => a[(Math.random() * a.length) | 0];
+    // 形：petal（花びら）/ rect（紙吹雪）/ star（星）/ glitter（傾きで白く光るラメ）
+    function add(x, y, angle, speed, kind) {
+      const shape = kind || (() => { const r = Math.random(); return r < .42 ? 'petal' : r < .64 ? 'rect' : r < .82 ? 'star' : 'glitter'; })();
+      const petal = shape === 'petal';
+      parts.push({
+        x, y,
+        vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
+        petal, shape,
+        size: petal ? rnd(9, 16) : shape === 'star' ? rnd(10, 15) : shape === 'glitter' ? rnd(4, 7) : rnd(6, 11),
+        color: shape === 'star' ? pick(STAR_CONF) : pick(COLORS),
+        rot: rnd(0, Math.PI * 2), vr: rnd(-6, 6),
+        tilt: rnd(0, Math.PI * 2), vt: rnd(4, 10),
+        drag: petal ? rnd(1.6, 2.4) : shape === 'glitter' ? rnd(1.8, 2.6) : rnd(1.0, 1.6),
+        sway: rnd(0, Math.PI * 2),
+        life: 0,
+      });
+    }
+    function burst(x, y) {
+      for (let i = 0; i < 130; i++) add(x, y, rnd(0, Math.PI * 2), rnd(180, 640));
+    }
+    function crackers() {
+      // 画面の左下・右下からクラッカーを打ち上げ
+      for (let i = 0; i < 70; i++) {
+        const ang = rnd(-1.35, -.85), sp = rnd(560, 1050);
+        add(-10, H * .82, ang, sp);
+        add(W + 10, H * .82, Math.PI - ang, sp);
+      }
+    }
+
+    // ===== キラキラ（十字の光）：色ごとに光彩つきスプライトを一度だけ描いて使い回す（shadowBlur を毎フレーム使わない） =====
+    const SPR = 96, SR = 34;                       // スプライトの一辺と、その中の光条の長さ
+    const sprites = {};
+    function glint(color) {
+      if (sprites[color]) return sprites[color];
+      const c = document.createElement('canvas'); c.width = c.height = SPR;
+      const g = c.getContext('2d'), m = SPR / 2;
+      const glow = g.createRadialGradient(m, m, 0, m, m, m);
+      glow.addColorStop(0, color); glow.addColorStop(.22, color + 'aa'); glow.addColorStop(.5, color + '33'); glow.addColorStop(1, color + '00');
+      g.fillStyle = glow; g.fillRect(0, 0, SPR, SPR);
+      const ray = (R, w, rot) => {
+        g.save(); g.translate(m, m); g.rotate(rot);
+        g.beginPath();
+        g.moveTo(0, -R);
+        g.quadraticCurveTo(w, -w, R, 0); g.quadraticCurveTo(w, w, 0, R);
+        g.quadraticCurveTo(-w, w, -R, 0); g.quadraticCurveTo(-w, -w, 0, -R);
+        g.fill(); g.restore();
+      };
+      g.fillStyle = color; ray(SR + 4, 5, 0);
+      g.fillStyle = '#fff'; ray(SR, 3.2, 0); ray(SR * .45, 2, Math.PI / 4);
+      const core = g.createRadialGradient(m, m, 0, m, m, 9);
+      core.addColorStop(0, '#fff'); core.addColorStop(1, 'rgba(255,255,255,0)');
+      g.fillStyle = core; g.fillRect(m - 9, m - 9, 18, 18);
+      return (sprites[color] = c);
+    }
+
+    // 金・白・ピンク・ラベンダー・水色の十字の光。寿命で消える
+    let stars = [], rings = [], emitters = [];
+    const STAR_COLORS = ['#ffffff', '#fff3c4', '#ffd76e', '#ffc2e2', '#d9c8ff', '#bfe4ff'];
+    function sparkle(x, y, n, dir, spread, [s0, s1], o = {}) {
+      for (let i = 0; i < n; i++) {
+        const ang = dir + rnd(-spread, spread), sp = rnd(s0, s1);
+        stars.push({ x, y, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp,
+          size: rnd(...(o.size || [4, 11])), life: -(o.delay ? rnd(0, o.delay) : 0), ttl: rnd(...(o.ttl || [.6, 1.4])),
+          g: o.g ?? 120, drag: o.drag ?? 2.4,
+          color: pick(o.colors || STAR_COLORS), rot: rnd(0, Math.PI), vr: rnd(-3, 3), tw: rnd(10, 20) });
+      }
+      start();
+    }
+    function drawStar(p) {
+      const k = p.life / p.ttl, a = k < .15 ? k / .15 : 1 - (k - .15) / .85;
+      const s = p.size * (0.6 + 0.4 * Math.sin(p.life * p.tw + p.rot * 5) ** 2);
+      const d = SPR * s / SR;
+      ctx.save();
+      ctx.globalAlpha = Math.max(a, 0);
+      ctx.translate(p.x, p.y); ctx.rotate(p.rot * .3);
+      if (p.flare) {
+        // 割れる瞬間の大きな光（横に長い光の筋つき）
+        ctx.drawImage(glint(p.color), -d * 2.6, -d * .16, d * 5.2, d * .32);
+        ctx.drawImage(glint(p.color), -d * .12, -d * 1.1, d * .24, d * 2.2);
+      }
+      ctx.drawImage(glint(p.color), -d / 2, -d / 2, d, d);
+      ctx.restore();
+    }
+    function flare(x, y, size) {
+      stars.push({ x, y, vx: 0, vy: 0, size, life: 0, ttl: .75, g: 0, drag: 0, color: '#ffe6f4', rot: 0, vr: 0, tw: 3, flare: true });
+      start();
+    }
+    // 衝撃波のリング
+    function ring(x, y, r0, r1, o = {}) {
+      rings.push({ x, y, r0, r1, life: -(o.delay || 0), ttl: o.ttl || .8, w: o.w || 6, color: o.color || '#ffffff' });
+      start();
+    }
+    function drawRing(p) {
+      const k = p.life / p.ttl, e = 1 - (1 - k) ** 3, r = p.r0 + (p.r1 - p.r0) * e;
+      ctx.save();
+      ctx.strokeStyle = p.color;
+      ctx.globalAlpha = (1 - k) ** 1.4 * .35;
+      ctx.lineWidth = p.w * (1 - k) * 3 + 1;
+      ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI * 2); ctx.stroke();
+      ctx.globalAlpha = (1 - k) ** 1.4;
+      ctx.lineWidth = p.w * (1 - k) + .5;
+      ctx.stroke();
+      ctx.restore();
+    }
+    // 毎フレーム呼ばれる発生源（尾・まわりの瞬き・吸い込み・チケットのまわり）
+    function emit(fn, ms = Infinity) { emitters.push({ fn, until: performance.now() + ms, acc: 0 }); start(); }
+
+    function rain(ms) { rainUntil = performance.now() + ms; rainForever = true; start(); }
+    function start() { if (!raf) { last = performance.now(); raf = requestAnimationFrame(tick); } }
+    function clear() { parts = []; stars = []; rings = []; emitters = []; rainUntil = 0; rainForever = false; ctx.clearRect(0, 0, W, H); }
+
+    const STAR = new Path2D();
+    for (let i = 0; i < 10; i++) {
+      const r = i % 2 ? .45 : 1, a = -Math.PI / 2 + i * Math.PI / 5;
+      STAR[i ? 'lineTo' : 'moveTo'](Math.cos(a) * r, Math.sin(a) * r);
+    }
+    STAR.closePath();
+
+    function draw(p) {
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot);
+      const c = Math.cos(p.tilt);
+      ctx.scale(1, c);
+      ctx.fillStyle = p.color;
+      if (p.petal) {
+        // 桜の花びら形（先端に切れ込み）
+        const s = p.size;
+        ctx.beginPath();
+        ctx.moveTo(0, s * .55);
+        ctx.bezierCurveTo(s * .75, s * .2, s * .55, -s * .6, s * .12, -s * .55);
+        ctx.lineTo(0, -s * .35);
+        ctx.lineTo(-s * .12, -s * .55);
+        ctx.bezierCurveTo(-s * .55, -s * .6, -s * .75, s * .2, 0, s * .55);
+        ctx.fill();
+      } else if (p.shape === 'star') {
+        const s = p.size / 2;
+        ctx.scale(s, s);
+        ctx.fill(STAR);
+        if (Math.abs(c) > .9) { ctx.globalAlpha = (Math.abs(c) - .9) * 8; ctx.fillStyle = '#fff'; ctx.fill(STAR); }
+      } else if (p.shape === 'glitter') {
+        // 正面を向いた瞬間だけ白く光るラメ
+        const s = p.size;
+        ctx.fillStyle = Math.abs(c) > .82 ? '#fff' : p.color;
+        ctx.beginPath(); ctx.moveTo(0, -s * .6); ctx.lineTo(s * .45, 0); ctx.lineTo(0, s * .6); ctx.lineTo(-s * .45, 0); ctx.closePath(); ctx.fill();
+      } else {
+        ctx.fillRect(-p.size / 2, -p.size * .3, p.size, p.size * .6);
+      }
+      ctx.restore();
+    }
+
+    function tick(now) {
+      const dt = Math.min((now - last) / 1000, 1 / 30); last = now;
+      if (now < rainUntil) {
+        // 割れた直後は多めに
+        const n = Math.random() < .6 ? 1 : 2;
+        for (let i = 0; i < n; i++) add(rnd(0, W), -20, Math.PI / 2, rnd(30, 80), Math.random() < .8 ? 'petal' : 'glitter');
+      } else if (rainForever && Math.random() < .45) {
+        // その後もずっと、控えめな量で降らせ続ける（花びら・紙・ラメ・星）
+        const r = Math.random();
+        add(rnd(0, W), -20, Math.PI / 2, rnd(30, 80), r < .5 ? 'petal' : r < .75 ? 'rect' : r < .9 ? 'glitter' : 'star');
+      }
+      emitters = emitters.filter((e) => now < e.until);
+      for (const e of emitters) e.fn(dt, e);
+      ctx.clearRect(0, 0, W, H);
+      parts = parts.filter((p) => p.y < H + 40 && p.x > -80 && p.x < W + 80 && p.life < 12);
+      for (const p of parts) {
+        p.life += dt;
+        const k = Math.exp(-p.drag * dt);
+        p.vx *= k; p.vy = p.vy * k + (p.petal ? 260 : 420) * dt;
+        const term = p.petal ? 95 : p.shape === 'glitter' ? 110 : 180;          // 終端速度（ひらひら落ちる）
+        if (p.vy > term) p.vy = term;
+        p.sway += dt * 2.2;
+        p.x += (p.vx + (p.petal ? Math.sin(p.sway) * 26 : 0)) * dt;
+        p.y += p.vy * dt;
+        p.rot += p.vr * dt * .4;
+        p.tilt += p.vt * dt;
+        draw(p);
+      }
+      rings = rings.filter((p) => p.life < p.ttl);
+      for (const p of rings) { p.life += dt; if (p.life > 0) drawRing(p); }
+      stars = stars.filter((p) => p.life < p.ttl);
+      for (const p of stars) {
+        p.life += dt;
+        if (p.life <= 0) continue;
+        const k = Math.exp(-p.drag * dt);
+        p.vx *= k; p.vy = p.vy * k + p.g * dt;
+        p.x += p.vx * dt; p.y += p.vy * dt; p.rot += p.vr * dt;
+        drawStar(p);
+      }
+      if (parts.length || stars.length || rings.length || emitters.length || now < rainUntil || rainForever) raf = requestAnimationFrame(tick);
+      else raf = 0;
+    }
+
+    return {
+      burst: (x, y) => { burst(x, y); start(); },
+      sparkle, flare, ring, emit,
+      crackers: () => { crackers(); start(); },
+      rain, clear,
+    };
+  })();
+
+  // ===== オーロラのカーテン（canvas） =====
+  //  縦の光の筋が並んだ帯が、ゆっくり波打ちながら横に流れる。低解像度で描いて CSS で拡大＋ぼかし
+  const curtain = (() => {
+    const cv = $('auroraCv'), ctx = cv.getContext('2d');
+    const K = .3;
+    //  y：帯の下端（明るい縁）の高さ、h：光の筋の長さ（画面高さ比）、dir：-1 は下向きに伸びる（チケットの下側）
+    const BANDS = [
+      { rgb: [255, 84, 170], y: .30, h: .24, amp: .04, f: .9, sp: .55, ph: 0, tilt: .12, a: 1.1, dir: 1 },
+      { rgb: [150, 96, 255], y: .35, h: .26, amp: .045, f: 1.2, sp: -.42, ph: 2.1, tilt: -.14, a: 1, dir: 1 },
+      { rgb: [60, 172, 255], y: .24, h: .18, amp: .035, f: 1.6, sp: .36, ph: 4.2, tilt: .05, a: .9, dir: 1 },
+      { rgb: [255, 186, 60], y: .55, h: .13, amp: .03, f: 1.3, sp: -.5, ph: 1.3, tilt: -.07, a: .85, dir: -1 },
+      { rgb: [255, 100, 185], y: .60, h: .17, amp: .035, f: 1, sp: .44, ph: 3.4, tilt: .09, a: .9, dir: -1 },
+      { rgb: [90, 180, 255], y: .66, h: .15, amp: .035, f: 1.4, sp: -.35, ph: 5.1, tilt: -.06, a: .8, dir: -1 },
+    ];
+    let w = 0, h = 0, raf = 0, level = 0, from = 0, to = 0, t0 = 0, dur = 1, T = 0, last = 0;
+    const strips = BANDS.map((b) => {
+      // 縦方向のグラデ：明るい縁（下端）から先へ向かって薄れていく
+      const c = document.createElement('canvas'); c.width = 1; c.height = 128;
+      const g = c.getContext('2d'), gr = g.createLinearGradient(0, 0, 0, 128), [r, gg, bb] = b.rgb;
+      gr.addColorStop(0, `rgba(${r},${gg},${bb},0)`);
+      gr.addColorStop(.45, `rgba(${r},${gg},${bb},.5)`);
+      gr.addColorStop(.86, `rgba(${Math.min(255, r + 40)},${Math.min(255, gg + 40)},${Math.min(255, bb + 40)},1)`);
+      gr.addColorStop(1, `rgba(${r},${gg},${bb},0)`);
+      g.fillStyle = gr; g.fillRect(0, 0, 1, 128);
+      return c;
+    });
+    function resize() {
+      w = Math.max(1, Math.round(app.clientWidth * K)); h = Math.max(1, Math.round(app.clientHeight * K));
+      cv.width = w; cv.height = h;
+    }
+    addEventListener('resize', resize); resize();
+
+    function draw() {
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.clearRect(0, 0, w, h);
+      if (level <= .001) return;
+      ctx.globalCompositeOperation = 'lighter';
+      const TAU = Math.PI * 2;
+      BANDS.forEach((b, i) => {
+        const st = strips[i];
+        for (let x = 0; x < w; x++) {
+          const xn = x / w;
+          const base = h * (b.y + b.tilt * (xn - .5) + b.amp * Math.sin(TAU * b.f * xn + T * b.sp + b.ph) + b.amp * .5 * Math.sin(TAU * b.f * 2.3 * xn - T * b.sp * 1.6 + b.ph * 1.7));
+          const len = h * b.h * (.72 + .28 * Math.sin(TAU * 2.1 * xn + T * .8 + b.ph));
+          const fold = .5 + .5 * Math.sin(TAU * 3.2 * xn + T * 1.1 * Math.sign(b.sp) + b.ph);
+          const rays = .5 + .25 * Math.sin(TAU * 11 * xn - T * 1.9 + b.ph * 3) + .25 * Math.sin(TAU * 17 * xn + T * 1.3 + b.ph);
+          const edge = Math.min(1, xn / .08, (1 - xn) / .08);
+          ctx.globalAlpha = Math.min(1, Math.max(0, level * b.a * (.4 + .6 * fold * fold) * (.5 + .5 * rays) * edge));
+          if (b.dir > 0) ctx.drawImage(st, x, base - len, 1.05, len);
+          else {
+            ctx.save(); ctx.translate(x, base); ctx.scale(1, -1);
+            ctx.drawImage(st, 0, -len, 1.05, len);
+            ctx.restore();
+          }
+        }
+      });
+    }
+    function tick(now) {
+      const dt = Math.min((now - last) / 1000, 1 / 30); last = now; T += dt;
+      const k = Math.min((now - t0) / dur, 1), e = k < .5 ? 2 * k * k : 1 - (-2 * k + 2) ** 2 / 2;
+      level = from + (to - from) * e;
+      draw();
+      raf = (to > 0 || k < 1) ? requestAnimationFrame(tick) : 0;
+    }
+    return {
+      // 明るさ（0〜1）を ms かけて変える
+      to(v, ms) {
+        from = level; to = v; t0 = performance.now(); dur = Math.max(ms, 1);
+        if (!raf) { last = t0; raf = requestAnimationFrame(tick); }
+      },
+      still(v) { level = v; T = 2; draw(); },
+      stop() { cancelAnimationFrame(raf); raf = 0; level = from = to = 0; draw(); },
+    };
+  })();
+  if (!SHOW_AURORA) curtain.to = curtain.still = () => {};   // 非表示の間は描画もしない
+})();
+</script>
+</body>
+</html>
