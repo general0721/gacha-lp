@@ -1498,35 +1498,43 @@ var bk=t.closest('.eq-back');if(bk){var b2=box(bk);show(b2,Math.max(0,cur(b2)-1)
 
 <script>
 (function(){
+  var AHEAD=10;   /* 先読みする止め絵の枚数（約1秒分） */
   var cs=[].slice.call(document.querySelectorAll('canvas[data-frames]'));
   var live=[];
   cs.forEach(function(c){
-    c._n=+c.dataset.n; c._per=+c.dataset.per; c._fps=+c.dataset.fps; c._sheets={}; c._drawn=-1;
-    c._ctx=c.getContext('2d'); c._t0=null;
+    c._n=+c.dataset.n; c._per=+c.dataset.per; c._fps=+c.dataset.fps; c._ns=Math.ceil(c._n/c._per);
+    c._sheets={}; c._i=0; c._drawn=-1; c._last=null; c._ctx=c.getContext('2d');
   });
   function sheet(c,k){
     var s=c._sheets[k]; if(s) return s;
-    s=new Image(); s.decoding='async'; s.src=c.dataset.frames+'s'+('00'+k).slice(-3)+'.webp';
+    s=new Image(); s.src=c.dataset.frames+'s'+('00'+k).slice(-3)+'.webp';
     s.onload=function(){ s._ok=true; }; c._sheets[k]=s; return s;
+  }
+  function draw(c,i){
+    var k=Math.floor(i/c._per), s=c._sheets[k];
+    if(!s||!s._ok) return false;
+    var w=c.width,h=c.height; c._ctx.drawImage(s,0,(i-k*c._per)*h,w,h,0,0,w,h); c._drawn=i; return true;
   }
   function tick(now){
     live.forEach(function(c){
-      if(c._t0===null) c._t0=now;
-      var i=Math.floor((now-c._t0)/1000*c._fps)%c._n, k=Math.floor(i/c._per), s=sheet(c,k);
-      var nk=(k+1)*c._per<c._n?k+1:0; sheet(c,nk);
-      for(var key in c._sheets){ if(+key!==k&&+key!==nk&&+key!==0){ delete c._sheets[key]; } }
-      if(s._ok&&i!==c._drawn){
-        var w=c.width,h=c.height; c._ctx.drawImage(s,0,(i-k*c._per)*h,w,h,0,0,w,h); c._drawn=i;
-      }
+      var k=Math.floor(c._i/c._per), want={};
+      for(var a=0;a<=AHEAD&&a<c._ns;a++){ var kk=(k+a)%c._ns; want[kk]=1; sheet(c,kk); }
+      for(var key in c._sheets){ if(!want[key]) delete c._sheets[key]; }
+      if(c._drawn<0){ if(draw(c,c._i)) c._last=now; return; }
+      /* 時間が来たら次のコマへ。次のコマがまだ読み込めていなければ、今のコマのまま待つ（コマは飛ばさない） */
+      var step=Math.floor((now-c._last)/1000*c._fps);
+      if(step<1) return;
+      var ni=(c._i+1)%c._n;
+      if(draw(c,ni)){ c._i=ni; c._last=step>3?now:c._last+1000/c._fps; }
     });
     requestAnimationFrame(tick);
   }
   if('IntersectionObserver' in window){
     var io=new IntersectionObserver(function(es){ es.forEach(function(e){
       var c=e.target, at=live.indexOf(c);
-      if(e.isIntersecting){ if(at<0){ live.push(c); sheet(c,0); } }
-      else if(at>=0){ live.splice(at,1); c._sheets={0:c._sheets[0]}; c._t0=null; }
-    }); },{rootMargin:'400px 0px'});
+      if(e.isIntersecting){ if(at<0) live.push(c); }
+      else if(at>=0){ live.splice(at,1); c._sheets={}; }
+    }); },{rootMargin:'600px 0px'});
     cs.forEach(function(c){ io.observe(c); });
   } else live=cs;
   requestAnimationFrame(tick);
