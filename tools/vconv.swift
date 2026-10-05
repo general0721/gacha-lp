@@ -1,6 +1,7 @@
 // 動画を H.264・短辺最大720px・指定ビットレート・fast-start の mp4 に変換する（音声なし：LPではミュート再生のため）
 // 使い方: vconv <入力> <出力.mp4> [kbps=1600]
 //         vconv --poster <入力> <出力.jpg>   （最初のコマを画像に）
+//         vconv --frames <入力> <出力フォルダ> <fps> <横幅>   （コマを連番JPEGに。動く画像用）
 import AVFoundation
 import ImageIO
 import UniformTypeIdentifiers
@@ -22,6 +23,38 @@ if CommandLine.arguments.count == 4 && CommandLine.arguments[1] == "--poster" {
   }
   sem.wait()
   exit(ok ? 0 : 1)
+}
+
+if CommandLine.arguments.count == 6 && CommandLine.arguments[1] == "--frames" {
+  let a = CommandLine.arguments
+  let asset = AVURLAsset(url: URL(fileURLWithPath: a[2]))
+  let fps = Double(a[4]) ?? 12, width = CGFloat(Double(a[5]) ?? 480)
+  let gen = AVAssetImageGenerator(asset: asset)
+  gen.appliesPreferredTrackTransform = true
+  gen.maximumSize = CGSize(width: width, height: width * 4)
+  gen.requestedTimeToleranceBefore = .zero
+  gen.requestedTimeToleranceAfter = .zero
+  let sem = DispatchSemaphore(value: 0)
+  var code: Int32 = 0
+  Task {
+    do {
+      let dur = try await asset.load(.duration).seconds
+      var n = 0
+      var t = 0.0
+      while t < dur - 0.001 {
+        let (img, _) = try await gen.image(at: CMTime(seconds: t, preferredTimescale: 600))
+        let url = URL(fileURLWithPath: a[3]).appendingPathComponent(String(format: "%05d.jpg", n))
+        let d = CGImageDestinationCreateWithURL(url as CFURL, UTType.jpeg.identifier as CFString, 1, nil)!
+        CGImageDestinationAddImage(d, img, [kCGImageDestinationLossyCompressionQuality: 0.92] as CFDictionary)
+        CGImageDestinationFinalize(d)
+        n += 1
+        t = Double(n) / fps
+      }
+    } catch { print("error:", error); code = 1 }
+    sem.signal()
+  }
+  sem.wait()
+  exit(code)
 }
 
 let a = CommandLine.arguments

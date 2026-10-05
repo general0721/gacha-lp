@@ -5,8 +5,10 @@
 
 - /uploads/… を相対パスにし、使っている素材だけ article/uploads/ に置く
 - 画像は WebP（横幅最大1000px）、HTMLに埋め込まれた画像（data:）もファイルに出して WebP 化
-- 動画は tools/vconv（Mac標準のAVFoundation）で短辺720px・1.6Mbps の H.264（すぐ再生できる fast-start・音声なし）mp4 に変換
-- 2枚目以降の画像は遅延読み込み、動画は画面に入ったら再生
+- 動画は全部「動く画像」（アニメーションWebP・横720px・15コマ/秒）に変換して <img> に置き換える。
+  動画だとiPhoneの低電力モード等で自動再生が止められ再生ボタンが出るため（2026-10-05 ユーザー指定）。
+  コマの書き出しは tools/vconv（Mac標準のAVFoundation。swiftc -O tools/vconv.swift -o tools/vconv）
+- 2枚目以降の画像は遅延読み込み。動く画像は読み込み中も最初のコマを背景に出しておく
 """
 import base64, hashlib, io, os, re, shutil, subprocess, sys
 from PIL import Image
@@ -20,6 +22,7 @@ OUT_UP = os.path.join(OUT, 'uploads')
 MAX_W = 1000
 VIDEO_EXT = ('.mp4', '.mov', '.m4v', '.webm')
 VCONV = os.path.join(HERE, 'tools', 'vconv')   # swiftc -O tools/vconv.swift -o tools/vconv
+ANIM_W, ANIM_FPS, ANIM_Q = 720, 15, 70
 
 
 def to_webp(im, dst):
@@ -35,21 +38,26 @@ def to_webp(im, dst):
     im.save(dst, 'WEBP', quality=80, method=6)
 
 
-def convert_video(src, dst):
-    if os.path.exists(dst) and os.path.getmtime(dst) >= os.path.getmtime(src):
-        return
-    tmp = dst + '.tmp.mp4'
-    subprocess.run([VCONV, src, tmp, '1600'], check=True, stdout=subprocess.DEVNULL)
-    if os.path.getsize(tmp) > os.path.getsize(src) * 0.9:   # 元がすでに軽い動画は、元より重くしない
-        kbps = max(300, int(1600 * os.path.getsize(src) / os.path.getsize(tmp) * 0.8))
-        subprocess.run([VCONV, src, tmp, str(kbps)], check=True, stdout=subprocess.DEVNULL)
-    os.replace(tmp, dst)
+def video_to_anim(src, dst, poster):
+    """動画 → 動く画像（アニメーションWebP）と最初のコマ（poster）。大きさは (幅, 高さ) を返す"""
+    if not (os.path.exists(dst) and os.path.getmtime(dst) >= os.path.getmtime(src) and os.path.exists(poster)):
+        d = dst + '.frames'
+        shutil.rmtree(d, ignore_errors=True)
+        os.makedirs(d)
+        subprocess.run([VCONV, '--frames', src, d, str(ANIM_FPS), str(ANIM_W)], check=True)
+        frames = [Image.open(os.path.join(d, f)).convert('RGB') for f in sorted(os.listdir(d))]
+        frames[0].save(dst, 'WEBP', save_all=True, append_images=frames[1:],
+                       duration=round(1000 / ANIM_FPS), loop=0, quality=ANIM_Q, method=4)
+        frames[0].save(poster, 'WEBP', quality=60, method=6)
+        shutil.rmtree(d)
+    return Image.open(poster).size
 
 
 def main():
     html = open(SRC_HTML, encoding='utf-8').read()
     os.makedirs(OUT_UP, exist_ok=True)
     keep = set()
+    sizes = {}
 
     # 埋め込み画像（data:）→ ファイル
     def inline(m):
@@ -69,15 +77,9 @@ def main():
         base, ext = os.path.splitext(fn)
         ext = ext.lower()
         if ext in VIDEO_EXT:
-            name = base + '.mp4'
-            convert_video(src, os.path.join(OUT_UP, name))
+            name = base + '.anim.webp'
             poster = base + '.poster.webp'
-            pp = os.path.join(OUT_UP, poster)
-            if not os.path.exists(pp) or os.path.getmtime(pp) < os.path.getmtime(src):
-                tmp = pp + '.jpg'
-                subprocess.run([VCONV, '--poster', os.path.join(OUT_UP, name), tmp], check=True)
-                to_webp(Image.open(tmp), pp)
-                os.remove(tmp)
+            sizes[name] = video_to_anim(src, os.path.join(OUT_UP, name), os.path.join(OUT_UP, poster))
             keep.add(poster)
         elif ext in ('.png', '.jpg', '.jpeg', '.gif'):
             name = base + '.webp'
@@ -91,60 +93,45 @@ def main():
         return m.group(1) + 'uploads/' + name
     html = re.sub(r'(^|[^A-Za-z0-9_.-])/uploads/([^"\')\s&\\]+)', upload, html)
 
+    # <video …></video> → 動く画像の <img>。動画用の見た目（角丸・枠・影・切り抜き）は CSS の video を .vanim に読み替えて引き継ぐ
+    def vid(m):
+        attrs = m.group(1)
+        sm = re.search(r'src="uploads/([^"]+)\.anim\.webp"', attrs)
+        if not sm:
+            return m.group(0)
+        base = sm.group(1)
+        w, h = sizes[base + '.anim.webp']
+        attrs = re.sub(r'\s(autoplay|muted|playsinline|loop|controls)(?=[\s>]|$)', '', attrs)
+        attrs = re.sub(r'\s(preload|poster)="[^"]*"', '', attrs)
+        bg = 'background-image:url(uploads/%s.poster.webp);background-size:cover;background-position:center' % base
+        if re.search(r'\sstyle="', attrs):
+            attrs = re.sub(r'\sstyle="([^"]*)"', lambda s2: ' style="%s;%s"' % (s2.group(1).rstrip(';'), bg), attrs, 1)
+        else:
+            attrs += ' style="%s"' % bg
+        cm = re.search(r'\sclass="([^"]*)"', attrs)
+        if cm:
+            attrs = attrs.replace(cm.group(0), ' class="%s vanim"' % cm.group(1), 1)
+        else:
+            attrs += ' class="vanim"'
+        return '<img%s width="%d" height="%d" alt="">' % (attrs, w, h)
+    html = re.sub(r'<video\b([^>]*)>\s*</video>', vid, html)
+    html = re.sub(r'<style\b[^>]*>.*?</style>',
+                  lambda m: re.sub(r'(?<![-\w.#])video(?=[\s,.>:{\[)+~]|$)', '.vanim', m.group(0)), html, flags=re.S)
+
     # 画像は最初の2枚以外を遅延読み込み
     n = [0]
     def lazy(m):
         n[0] += 1
         tag = m.group(0)
+        # 縦横を書いておくと、遅れて読み込む画像でもページがガタつかない
+        sm = re.search(r'src="uploads/([^"]+)"', tag)
+        if sm and ' width=' not in tag and os.path.exists(os.path.join(OUT_UP, sm.group(1))):
+            w, h = Image.open(os.path.join(OUT_UP, sm.group(1))).size
+            tag = tag[:-1].rstrip('/').rstrip() + ' width="%d" height="%d">' % (w, h)
         if n[0] <= 2 or 'loading=' in tag:
             return tag
         return tag[:4] + ' loading="lazy" decoding="async"' + tag[4:]
     html = re.sub(r'<img\b[^>]*>', lazy, html)
-
-    # 動画は最初の1本だけ先読み、残りは画面に入ったら読む
-    # 最初のコマを poster にして、読み込み前でも空の枠＋再生ボタンにならないようにする
-    v = [0]
-    def vid(m):
-        v[0] += 1
-        tag = m.group(0)
-        sm = re.search(r'src="uploads/([^"]+)\.mp4"', tag)
-        extra = ' disablepictureinpicture disableremoteplayback x-webkit-airplay="deny"'
-        if sm and 'poster=' not in tag:
-            extra += ' poster="uploads/%s.poster.webp"' % sm.group(1)
-        tag = tag[:6] + extra + tag[6:]
-        return tag if v[0] == 1 else tag.replace('preload="auto"', 'preload="metadata"')
-    html = re.sub(r'<video\b[^>]*>', vid, html)
-
-    script = '''<style>
-video::-webkit-media-controls,video::-webkit-media-controls-panel,
-video::-webkit-media-controls-overlay-play-button,video::-webkit-media-controls-start-playback-button{display:none!important;-webkit-appearance:none;opacity:0}
-</style>
-<script>
-(function(){
-  var vs=[].slice.call(document.querySelectorAll('video[autoplay]'));
-  function play(v){ v.muted=true; var p=v.play(); if(p&&p.catch) p.catch(function(){}); }
-  if('IntersectionObserver' in window){
-    var io=new IntersectionObserver(function(es){ es.forEach(function(e){
-      if(e.isIntersecting){ e.target.preload='auto'; play(e.target); } else e.target.pause();
-    }); },{rootMargin:'200px 0px'});
-    vs.forEach(function(v){ io.observe(v); });
-  } else vs.forEach(play);
-  /* 低電力モード等で自動再生が止められたときは、最初のタップで全部の動画の再生を許可してもらう
-     （iPhoneは touchend / click だけが「ユーザー操作」扱い。画面外の動画はすぐ止める） */
-  var unlocked=false;
-  function unlock(){ if(unlocked) return; unlocked=true;
-    vs.forEach(function(v){ v.muted=true; var p=v.play(); var r=v.getBoundingClientRect();
-      if(r.bottom<-200||r.top>innerHeight+200){ if(p&&p.then) p.then(function(){ v.pause(); },function(){}); else v.pause(); }
-      else if(p&&p.catch) p.catch(function(){}); }); }
-  ['touchend','click'].forEach(function(t){ addEventListener(t,unlock,{passive:true,capture:true}); });
-  /* 動画自体をタップしても一時停止・全画面にしない */
-  vs.forEach(function(v){ v.addEventListener('pause',function(){ var r=v.getBoundingClientRect();
-    if(r.bottom>0&&r.top<innerHeight&&!document.hidden) setTimeout(function(){ play(v); },50); }); });
-  document.addEventListener('visibilitychange',function(){ if(!document.hidden) vs.forEach(function(v){
-    var r=v.getBoundingClientRect(); if(r.bottom>0&&r.top<innerHeight) play(v); }); });
-})();
-</script>'''
-    html = html.replace('</body>', script + '</body>', 1) if '</body>' in html else html + script
 
     for fn in os.listdir(OUT_UP):
         if fn not in keep:
