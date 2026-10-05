@@ -610,12 +610,39 @@
       if (location.hash === '#autoplay') app.click();   // 動作確認用
     });
 
+  // ===== バイブレーション =====
+  // Android は navigator.vibrate（パターン＝[振動ms, 休みms, 振動ms, …]）。
+  // iPhone の Safari には vibrate が無いので、iOS 18 以降の「スイッチ（<input switch>）を切り替えると鳴る軽い触覚」を使う。
+  // こちらは強さを変えられず1回コツッと鳴るだけなので、パターンの振動の始まりごとに1回鳴らす。
+  const haptic = (() => {
+    const canVibrate = typeof navigator.vibrate === 'function';
+    let label = null;
+    if (!canVibrate) {
+      label = document.createElement('label');
+      label.setAttribute('aria-hidden', 'true');
+      label.style.cssText = 'position:fixed;left:-9999px;top:0;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none';
+      const sw = document.createElement('input');
+      sw.type = 'checkbox'; sw.setAttribute('switch', ''); sw.tabIndex = -1;
+      label.appendChild(sw);
+      document.body.appendChild(label);
+    }
+    const tick = () => { if (label) label.click(); };
+    return (pattern) => {
+      const p = Array.isArray(pattern) ? pattern : [pattern];
+      if (canVibrate) { try { navigator.vibrate(p); } catch (e) {} return; }
+      for (let i = 0, t = 0; i < p.length; t += p[i], i++) {
+        if (i % 2 === 0) { if (t === 0) tick(); else setTimeout(tick, t); }
+      }
+    };
+  })();
+
   let state = 'idle', gen = 0;
   // 画面上のカプセルの中心と半径（WAAPI で動いている最中の見た目の位置）
   const capC = () => { const r = capsule.getBoundingClientRect(), a = app.getBoundingClientRect(); return { x: r.left - a.left + r.width / 2, y: r.top - a.top + r.height / 2, r: r.width / 2 }; };
   app.addEventListener('click', (e) => {
     if (state !== 'idle' || e.target.closest('.actions')) return;
     state = 'playing';
+    haptic(20);   // タップした手応え
     play().then(() => { state = 'done'; });
   });
 
@@ -636,6 +663,7 @@
     const at = (x, y, s, r = 0) => `translate(${x - size / 2}px, ${y - size / 2}px) scale(${s}) rotate(${r}deg)`;
 
     if (reduced) {
+      haptic([30, 80, 30]);
       capsule.style.opacity = 0;
       curtain.still(.5);
       veil.style.opacity = 1; aura.style.opacity = 1; aurora.style.opacity = .55;
@@ -654,6 +682,9 @@
       { transform: 'rotate(360deg)' },
     ], { duration: 1500 });
 
+    // 取手のカチッ、カチッ（回り始め・半分で止まる所・回り切った所）＋本体が揺れる間のガタガタ
+    wait(80).then(() => haptic([18, 530, 22, 150, 14, 90, 16, 90, 18, 90, 20, 90, 22, 90, 26, 60, 40]));
+
     // 2. 本体が揺れる
     const SWINGS = 12;
     const shake = wait(250).then(() => anim(gacha, [{ transform: 'translate(0,0) rotate(0)' }].concat(
@@ -671,6 +702,7 @@
 
     await Promise.all([turn, shake, stir]);
     pile.take();   // 1個が取り出し口へ落ちる
+    haptic([35, 120, 25]);   // ゴトン、ポンッ
 
     // 4. 取り出し口からカプセルがポンッと出てくる（ここでは光らせない）
     await anim(capsule, [
@@ -692,6 +724,7 @@
     ], { duration: 880, easing: 'cubic-bezier(.33,0,.2,1)' });
 
     // 6. 中央に来てから光る：光の玉・リング・光線・星・オーロラ
+    haptic([45, 60, 20]);
     const bw = burst.offsetWidth;
     const bT = `translate(${cx - bw / 2}px, ${cy - bw / 2}px)`;
     anim(burst, [
@@ -744,12 +777,14 @@
       }
     }, 540);
     curtain.to(1, 600);
+    haptic([10, 50, 14, 42, 18, 34, 24, 26, 32, 18, 44, 10, 60]);   // プルプル…がだんだん強く
     await anim(capsule, Array.from({ length: 11 }, (_, i) => {
       const k = i / 10, amp = 2 + k * 5;
       return { transform: at(cx + (i % 2 ? amp : -amp), cy, 1 + k * .06, (i % 2 ? 1 : -1) * amp * .6) };
     }).concat([{ transform: at(cx, cy, 1.08, 0) }]), { duration: 600, easing: 'linear' });
 
     // 7. パカッと割れる + 花吹雪 + チケット
+    haptic([140, 70, 50, 70, 30]);   // ドンッ！＋余韻
     anim(flash, [{ opacity: 0 }, { opacity: 1, offset: .25 }, { opacity: 0 }], { duration: 650, easing: 'ease-out' });
     // 光条が広がる＋大きな十字の光＋衝撃波リング3重＋光の粒が飛び散る
     anim(openRays, [
@@ -811,6 +846,7 @@
       { opacity: 1, transform: 'translateY(-106%) scale(1.06)', offset: .6 },
       { opacity: 1, transform: 'translateY(-100%) scale(1)' },
     ], { duration: 600, easing: 'ease-out' });
+    haptic(25);   // チケット到着
     ticket.animate([
       { transform: 'translateY(0) rotate(0)' },
       { transform: 'translateY(-6px) rotate(-.6deg)' },
