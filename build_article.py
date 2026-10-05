@@ -71,6 +71,14 @@ def main():
         if ext in VIDEO_EXT:
             name = base + '.mp4'
             convert_video(src, os.path.join(OUT_UP, name))
+            poster = base + '.poster.webp'
+            pp = os.path.join(OUT_UP, poster)
+            if not os.path.exists(pp) or os.path.getmtime(pp) < os.path.getmtime(src):
+                tmp = pp + '.jpg'
+                subprocess.run([VCONV, '--poster', os.path.join(OUT_UP, name), tmp], check=True)
+                to_webp(Image.open(tmp), pp)
+                os.remove(tmp)
+            keep.add(poster)
         elif ext in ('.png', '.jpg', '.jpeg', '.gif'):
             name = base + '.webp'
             dst = os.path.join(OUT_UP, name)
@@ -94,13 +102,24 @@ def main():
     html = re.sub(r'<img\b[^>]*>', lazy, html)
 
     # 動画は最初の1本だけ先読み、残りは画面に入ったら読む
+    # 最初のコマを poster にして、読み込み前でも空の枠＋再生ボタンにならないようにする
     v = [0]
     def vid(m):
         v[0] += 1
-        return m.group(0) if v[0] == 1 else m.group(0).replace('preload="auto"', 'preload="metadata"')
+        tag = m.group(0)
+        sm = re.search(r'src="uploads/([^"]+)\.mp4"', tag)
+        extra = ' disablepictureinpicture disableremoteplayback x-webkit-airplay="deny"'
+        if sm and 'poster=' not in tag:
+            extra += ' poster="uploads/%s.poster.webp"' % sm.group(1)
+        tag = tag[:6] + extra + tag[6:]
+        return tag if v[0] == 1 else tag.replace('preload="auto"', 'preload="metadata"')
     html = re.sub(r'<video\b[^>]*>', vid, html)
 
-    script = '''<script>
+    script = '''<style>
+video::-webkit-media-controls,video::-webkit-media-controls-panel,
+video::-webkit-media-controls-overlay-play-button,video::-webkit-media-controls-start-playback-button{display:none!important;-webkit-appearance:none;opacity:0}
+</style>
+<script>
 (function(){
   var vs=[].slice.call(document.querySelectorAll('video[autoplay]'));
   function play(v){ v.muted=true; var p=v.play(); if(p&&p.catch) p.catch(function(){}); }
@@ -110,10 +129,19 @@ def main():
     }); },{rootMargin:'200px 0px'});
     vs.forEach(function(v){ io.observe(v); });
   } else vs.forEach(play);
-  /* 低電力モード等で自動再生が止められたときは、最初のタッチ・スクロールで再生 */
-  function kick(){ vs.forEach(function(v){ var r=v.getBoundingClientRect();
-    if(r.bottom>0&&r.top<innerHeight) play(v); }); }
-  ['touchstart','scroll','click'].forEach(function(t){ addEventListener(t,kick,{passive:true}); });
+  /* 低電力モード等で自動再生が止められたときは、最初のタップで全部の動画の再生を許可してもらう
+     （iPhoneは touchend / click だけが「ユーザー操作」扱い。画面外の動画はすぐ止める） */
+  var unlocked=false;
+  function unlock(){ if(unlocked) return; unlocked=true;
+    vs.forEach(function(v){ v.muted=true; var p=v.play(); var r=v.getBoundingClientRect();
+      if(r.bottom<-200||r.top>innerHeight+200){ if(p&&p.then) p.then(function(){ v.pause(); },function(){}); else v.pause(); }
+      else if(p&&p.catch) p.catch(function(){}); }); }
+  ['touchend','click'].forEach(function(t){ addEventListener(t,unlock,{passive:true,capture:true}); });
+  /* 動画自体をタップしても一時停止・全画面にしない */
+  vs.forEach(function(v){ v.addEventListener('pause',function(){ var r=v.getBoundingClientRect();
+    if(r.bottom>0&&r.top<innerHeight&&!document.hidden) setTimeout(function(){ play(v); },50); }); });
+  document.addEventListener('visibilitychange',function(){ if(!document.hidden) vs.forEach(function(v){
+    var r=v.getBoundingClientRect(); if(r.bottom>0&&r.top<innerHeight) play(v); }); });
 })();
 </script>'''
     html = html.replace('</body>', script + '</body>', 1) if '</body>' in html else html + script

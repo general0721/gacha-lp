@@ -1,6 +1,28 @@
 // 動画を H.264・短辺最大720px・指定ビットレート・fast-start の mp4 に変換する（音声なし：LPではミュート再生のため）
 // 使い方: vconv <入力> <出力.mp4> [kbps=1600]
+//         vconv --poster <入力> <出力.jpg>   （最初のコマを画像に）
 import AVFoundation
+import ImageIO
+import UniformTypeIdentifiers
+
+if CommandLine.arguments.count == 4 && CommandLine.arguments[1] == "--poster" {
+  let a = CommandLine.arguments
+  let gen = AVAssetImageGenerator(asset: AVURLAsset(url: URL(fileURLWithPath: a[2])))
+  gen.appliesPreferredTrackTransform = true
+  gen.requestedTimeToleranceBefore = .zero
+  gen.requestedTimeToleranceAfter = .zero
+  let sem = DispatchSemaphore(value: 0)
+  var ok = false
+  gen.generateCGImageAsynchronously(for: .zero) { img, _, _ in
+    if let img, let d = CGImageDestinationCreateWithURL(URL(fileURLWithPath: a[3]) as CFURL, UTType.jpeg.identifier as CFString, 1, nil) {
+      CGImageDestinationAddImage(d, img, [kCGImageDestinationLossyCompressionQuality: 0.9] as CFDictionary)
+      ok = CGImageDestinationFinalize(d)
+    }
+    sem.signal()
+  }
+  sem.wait()
+  exit(ok ? 0 : 1)
+}
 
 let a = CommandLine.arguments
 guard a.count >= 3 else { print("usage: vconv in out [kbps]"); exit(2) }
