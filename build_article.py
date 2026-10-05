@@ -5,7 +5,7 @@
 
 - /uploads/… を相対パスにし、使っている素材だけ article/uploads/ に置く
 - 画像は WebP（横幅最大1000px）、HTMLに埋め込まれた画像（data:）もファイルに出して WebP 化
-- 動画は全部「コマ送り」に変換して <canvas> にページのJSで描く（横720px・30コマ/秒）。
+- 動画は全部「コマ送り」に変換して <canvas> にページのJSで描く（横600px・30コマ/秒。iPhoneの4K動画は1本7MBあり4Gで動き出しが遅かったので720→600・画質70→62）。
   コマは数枚ずつ縦につないだ止め絵（uploads/<名前>.frames/s000.webp …）にして、画面に入ったものだけ読み込んで描く。
   経緯（2026-10-05）：<video> はiPhoneの低電力モード等で止められ再生ボタンが出る → アニメーションWebPにしたが
   iPhoneでは「動かない」（低電力モード／アニメーション画像の自動再生オフ／重くて読み込み待ち）→ JSで描く方式に。
@@ -24,7 +24,7 @@ OUT_UP = os.path.join(OUT, 'uploads')
 MAX_W = 1000
 VIDEO_EXT = ('.mp4', '.mov', '.m4v', '.webm')
 VCONV = os.path.join(HERE, 'tools', 'vconv')   # swiftc -O tools/vconv.swift -o tools/vconv
-ANIM_W, ANIM_FPS, ANIM_Q = 720, 30, 70
+ANIM_W, ANIM_FPS, ANIM_Q = 600, 30, 62
 SHEET_PX = 3_000_000   # 1枚の止め絵に入れるコマの合計画素数の上限（スマホのメモリ対策）
 
 
@@ -81,7 +81,7 @@ PLAYER = """<script>
   function sheet(c,k){
     var s=c._sheets[k]; if(s) return s;
     s=new Image(); s.src=c.dataset.frames+'s'+('00'+k).slice(-3)+'.webp';
-    s.onload=function(){ s._ok=true; }; c._sheets[k]=s; return s;
+    s.onload=function(){ s._ok=true; }; s.onerror=function(){ delete c._sheets[k]; }; c._sheets[k]=s; return s;
   }
   function draw(c,i){
     var k=Math.floor(i/c._per), s=c._sheets[k];
@@ -91,7 +91,12 @@ PLAYER = """<script>
   function tick(now){
     live.forEach(function(c){
       var k=Math.floor(c._i/c._per), want={};
-      for(var a=0;a<=AHEAD&&a<c._ns;a++){ var kk=(k+a)%c._ns; want[kk]=1; sheet(c,kk); }
+      /* 今のコマから順に、同時に2枚までだけ読み込む（一度に頼むと最初の1枚が遅れる） */
+      var busy=0;
+      for(var a=0;a<=AHEAD&&a<c._ns;a++){ var kk=(k+a)%c._ns; want[kk]=1;
+        var s=c._sheets[kk]; if(s&&!s._ok) busy++; }
+      for(var a2=0;a2<=AHEAD&&a2<c._ns&&busy<2;a2++){ var k2=(k+a2)%c._ns;
+        if(!c._sheets[k2]){ sheet(c,k2); busy++; } }
       for(var key in c._sheets){ if(!want[key]) delete c._sheets[key]; }
       if(c._drawn<0){ if(draw(c,c._i)) c._last=now; return; }
       /* 時間が来たら次のコマへ。次のコマがまだ読み込めていなければ、今のコマのまま待つ（コマは飛ばさない） */
