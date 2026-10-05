@@ -5,7 +5,7 @@
 
 - /uploads/… を相対パスにし、使っている素材だけ article/uploads/ に置く
 - 画像は WebP（横幅最大1000px）、HTMLに埋め込まれた画像（data:）もファイルに出して WebP 化
-- 動画は全部「動く画像」（アニメーションWebP・横720px・15コマ/秒）に変換して <img> に置き換える。
+- 動画は全部「動く画像」（アニメーションWebP・横720px・30コマ/秒（元動画と同じなめらかさ。2026-10-05 ユーザー指定で15→30））に変換して <img> に置き換える。
   動画だとiPhoneの低電力モード等で自動再生が止められ再生ボタンが出るため（2026-10-05 ユーザー指定）。
   コマの書き出しは tools/vconv（Mac標準のAVFoundation。swiftc -O tools/vconv.swift -o tools/vconv）
 - 2枚目以降の画像は遅延読み込み。動く画像は読み込み中も最初のコマを背景に出しておく
@@ -22,7 +22,7 @@ OUT_UP = os.path.join(OUT, 'uploads')
 MAX_W = 1000
 VIDEO_EXT = ('.mp4', '.mov', '.m4v', '.webm')
 VCONV = os.path.join(HERE, 'tools', 'vconv')   # swiftc -O tools/vconv.swift -o tools/vconv
-ANIM_W, ANIM_FPS, ANIM_Q = 720, 15, 70
+ANIM_W, ANIM_FPS, ANIM_Q = 720, 30, 70
 
 
 def to_webp(im, dst):
