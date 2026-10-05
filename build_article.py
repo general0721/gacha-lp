@@ -5,10 +5,12 @@
 
 - /uploads/… を相対パスにし、使っている素材だけ article/uploads/ に置く
 - 画像は WebP（横幅最大1000px）、HTMLに埋め込まれた画像（data:）もファイルに出して WebP 化
-- 動画は全部「動く画像」（アニメーションWebP・横720px・30コマ/秒（元動画と同じなめらかさ。2026-10-05 ユーザー指定で15→30））に変換して <img> に置き換える。
-  動画だとiPhoneの低電力モード等で自動再生が止められ再生ボタンが出るため（2026-10-05 ユーザー指定）。
+- 動画は全部「コマ送り」に変換して <canvas> にページのJSで描く（横720px・30コマ/秒）。
+  コマは数枚ずつ縦につないだ止め絵（uploads/<名前>.frames/s000.webp …）にして、画面に入ったものだけ読み込んで描く。
+  経緯（2026-10-05）：<video> はiPhoneの低電力モード等で止められ再生ボタンが出る → アニメーションWebPにしたが
+  iPhoneでは「動かない」（低電力モード／アニメーション画像の自動再生オフ／重くて読み込み待ち）→ JSで描く方式に。
   コマの書き出しは tools/vconv（Mac標準のAVFoundation。swiftc -O tools/vconv.swift -o tools/vconv）
-- 2枚目以降の画像は遅延読み込み。動く画像は読み込み中も最初のコマを背景に出しておく
+- 2枚目以降の画像は遅延読み込み。動画の枠は読み込み中も最初のコマを背景に出しておく
 """
 import base64, hashlib, io, os, re, shutil, subprocess, sys
 from PIL import Image
@@ -23,6 +25,7 @@ MAX_W = 1000
 VIDEO_EXT = ('.mp4', '.mov', '.m4v', '.webm')
 VCONV = os.path.join(HERE, 'tools', 'vconv')   # swiftc -O tools/vconv.swift -o tools/vconv
 ANIM_W, ANIM_FPS, ANIM_Q = 720, 30, 70
+SHEET_PX = 3_000_000   # 1枚の止め絵に入れるコマの合計画素数の上限（スマホのメモリ対策）
 
 
 def to_webp(im, dst):
@@ -38,19 +41,70 @@ def to_webp(im, dst):
     im.save(dst, 'WEBP', quality=80, method=6)
 
 
-def video_to_anim(src, dst, poster):
-    """動画 → 動く画像（アニメーションWebP）と最初のコマ（poster）。大きさは (幅, 高さ) を返す"""
-    if not (os.path.exists(dst) and os.path.getmtime(dst) >= os.path.getmtime(src) and os.path.exists(poster)):
-        d = dst + '.frames'
+def video_to_sheets(src, dirname):
+    """動画 → コマを縦につないだ止め絵の束（dirname/s000.webp…）と最初のコマ（dirname/poster.webp）。
+    (幅, 高さ, コマ数, 1枚あたりのコマ数) を返す"""
+    meta = os.path.join(dirname, 'meta.txt')
+    if not (os.path.exists(meta) and os.path.getmtime(meta) >= os.path.getmtime(src)):
+        shutil.rmtree(dirname, ignore_errors=True)
+        d = dirname + '.tmp'
         shutil.rmtree(d, ignore_errors=True)
         os.makedirs(d)
         subprocess.run([VCONV, '--frames', src, d, str(ANIM_FPS), str(ANIM_W)], check=True)
-        frames = [Image.open(os.path.join(d, f)).convert('RGB') for f in sorted(os.listdir(d))]
-        frames[0].save(dst, 'WEBP', save_all=True, append_images=frames[1:],
-                       duration=round(1000 / ANIM_FPS), loop=0, quality=ANIM_Q, method=4)
-        frames[0].save(poster, 'WEBP', quality=60, method=6)
+        files = sorted(os.listdir(d))
+        w, h = Image.open(os.path.join(d, files[0])).size
+        per = max(1, min(SHEET_PX // (w * h), 16383 // h))
+        os.makedirs(dirname)
+        for k in range(0, len(files), per):
+            chunk = files[k:k + per]
+            sheet = Image.new('RGB', (w, h * len(chunk)))
+            for j, f in enumerate(chunk):
+                sheet.paste(Image.open(os.path.join(d, f)).convert('RGB'), (0, h * j))
+            sheet.save(os.path.join(dirname, 's%03d.webp' % (k // per)), 'WEBP', quality=ANIM_Q, method=4)
+        Image.open(os.path.join(d, files[0])).convert('RGB').save(os.path.join(dirname, 'poster.webp'), 'WEBP', quality=60, method=6)
         shutil.rmtree(d)
-    return Image.open(poster).size
+        open(meta, 'w').write('%d %d %d %d' % (w, h, len(files), per))
+    return tuple(int(x) for x in open(meta).read().split())
+
+
+# コマ送りの再生：画面の近くに来た枠だけ止め絵を読み込み、時間に合わせて1コマずつ canvas に描く。
+# 読み込めていないコマは直前のコマのまま待つ（最初は poster が背景に出ている）。画面外の枠は描かず、古い止め絵は手放す。
+PLAYER = """<script>
+(function(){
+  var cs=[].slice.call(document.querySelectorAll('canvas[data-frames]'));
+  var live=[];
+  cs.forEach(function(c){
+    c._n=+c.dataset.n; c._per=+c.dataset.per; c._fps=+c.dataset.fps; c._sheets={}; c._drawn=-1;
+    c._ctx=c.getContext('2d'); c._t0=null;
+  });
+  function sheet(c,k){
+    var s=c._sheets[k]; if(s) return s;
+    s=new Image(); s.decoding='async'; s.src=c.dataset.frames+'s'+('00'+k).slice(-3)+'.webp';
+    s.onload=function(){ s._ok=true; }; c._sheets[k]=s; return s;
+  }
+  function tick(now){
+    live.forEach(function(c){
+      if(c._t0===null) c._t0=now;
+      var i=Math.floor((now-c._t0)/1000*c._fps)%c._n, k=Math.floor(i/c._per), s=sheet(c,k);
+      var nk=(k+1)*c._per<c._n?k+1:0; sheet(c,nk);
+      for(var key in c._sheets){ if(+key!==k&&+key!==nk&&+key!==0){ delete c._sheets[key]; } }
+      if(s._ok&&i!==c._drawn){
+        var w=c.width,h=c.height; c._ctx.drawImage(s,0,(i-k*c._per)*h,w,h,0,0,w,h); c._drawn=i;
+      }
+    });
+    requestAnimationFrame(tick);
+  }
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(es){ es.forEach(function(e){
+      var c=e.target, at=live.indexOf(c);
+      if(e.isIntersecting){ if(at<0){ live.push(c); sheet(c,0); } }
+      else if(at>=0){ live.splice(at,1); c._sheets={0:c._sheets[0]}; c._t0=null; }
+    }); },{rootMargin:'400px 0px'});
+    cs.forEach(function(c){ io.observe(c); });
+  } else live=cs;
+  requestAnimationFrame(tick);
+})();
+</script>"""
 
 
 def main():
@@ -77,10 +131,8 @@ def main():
         base, ext = os.path.splitext(fn)
         ext = ext.lower()
         if ext in VIDEO_EXT:
-            name = base + '.anim.webp'
-            poster = base + '.poster.webp'
-            sizes[name] = video_to_anim(src, os.path.join(OUT_UP, name), os.path.join(OUT_UP, poster))
-            keep.add(poster)
+            name = base + '.frames'
+            sizes[name] = video_to_sheets(src, os.path.join(OUT_UP, name))
         elif ext in ('.png', '.jpg', '.jpeg', '.gif'):
             name = base + '.webp'
             dst = os.path.join(OUT_UP, name)
@@ -93,17 +145,18 @@ def main():
         return m.group(1) + 'uploads/' + name
     html = re.sub(r'(^|[^A-Za-z0-9_.-])/uploads/([^"\')\s&\\]+)', upload, html)
 
-    # <video …></video> → 動く画像の <img>。動画用の見た目（角丸・枠・影・切り抜き）は CSS の video を .vanim に読み替えて引き継ぐ
+    # <video …></video> → コマ送りの <canvas>。動画用の見た目（角丸・枠・影・切り抜き）は CSS の video を .vanim に読み替えて引き継ぐ
     def vid(m):
         attrs = m.group(1)
-        sm = re.search(r'src="uploads/([^"]+)\.anim\.webp"', attrs)
+        sm = re.search(r'\ssrc="uploads/([^"]+)\.frames"', attrs)
         if not sm:
             return m.group(0)
         base = sm.group(1)
-        w, h = sizes[base + '.anim.webp']
+        w, h, nfr, per = sizes[base + '.frames']
+        attrs = attrs.replace(sm.group(0), '')
         attrs = re.sub(r'\s(autoplay|muted|playsinline|loop|controls)(?=[\s>]|$)', '', attrs)
         attrs = re.sub(r'\s(preload|poster)="[^"]*"', '', attrs)
-        bg = 'background-image:url(uploads/%s.poster.webp);background-size:cover;background-position:center' % base
+        bg = 'background-image:url(uploads/%s.frames/poster.webp);background-size:100%% 100%%' % base
         if re.search(r'\sstyle="', attrs):
             attrs = re.sub(r'\sstyle="([^"]*)"', lambda s2: ' style="%s;%s"' % (s2.group(1).rstrip(';'), bg), attrs, 1)
         else:
@@ -113,7 +166,8 @@ def main():
             attrs = attrs.replace(cm.group(0), ' class="%s vanim"' % cm.group(1), 1)
         else:
             attrs += ' class="vanim"'
-        return '<img%s width="%d" height="%d" alt="">' % (attrs, w, h)
+        return ('<canvas%s width="%d" height="%d" data-frames="uploads/%s.frames/" data-n="%d" data-per="%d" data-fps="%d"></canvas>'
+                % (attrs, w, h, base, nfr, per, ANIM_FPS))
     html = re.sub(r'<video\b([^>]*)>\s*</video>', vid, html)
     html = re.sub(r'<style\b[^>]*>.*?</style>',
                   lambda m: re.sub(r'(?<![-\w.#])video(?=[\s,.>:{\[)+~]|$)', '.vanim', m.group(0)), html, flags=re.S)
@@ -133,11 +187,14 @@ def main():
         return tag[:4] + ' loading="lazy" decoding="async"' + tag[4:]
     html = re.sub(r'<img\b[^>]*>', lazy, html)
 
+    html = html.replace('</body>', PLAYER + '</body>', 1) if '</body>' in html else html + PLAYER
+
     for fn in os.listdir(OUT_UP):
         if fn not in keep:
-            os.remove(os.path.join(OUT_UP, fn))
+            fp = os.path.join(OUT_UP, fn)
+            shutil.rmtree(fp) if os.path.isdir(fp) else os.remove(fp)
     open(os.path.join(OUT, 'index.html'), 'w', encoding='utf-8').write(html)
-    tot = sum(os.path.getsize(os.path.join(OUT_UP, f)) for f in keep)
+    tot = sum(os.path.getsize(os.path.join(r, f)) for r, _, fs in os.walk(OUT_UP) for f in fs)
     print('html %dKB / 素材 %d点 %.1fMB' % (len(html.encode()) // 1024, len(keep), tot / 1048576))
 
 

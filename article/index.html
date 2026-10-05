@@ -178,6 +178,7 @@ body.has-fix{padding-bottom:82px}
 .tone-pri{--bx:#e8503a;--bxd:#b53e2d;--bxl:#fce7e3;--bxt:#ffffff}
 .tone-acc{--bx:#f2b705;--bxd:#a57c03;--bxl:#fcefc8;--bxt:#222222}
 .tone-dark{--bx:#484848;--bxd:#363636;--bxl:#f0f0f0;--bxt:#ffffff}
+.tone-pink{--bx:#ff4f93;--bxd:#c8175f;--bxl:#ffe3ee;--bxt:#ffffff}
 .tone-plain{--bx:#bcbcbc;--bxd:#7a7a7a;--bxl:#f2f2f2;--bxt:#444444}
 
 /* ===== ファーストビュー ===== */
@@ -305,11 +306,39 @@ body.has-fix{padding-bottom:82px}
 /* ===== CTAボタン ===== */
 .b-cta.tone-acc .btn{background:linear-gradient(180deg,#f4c432 0%,#f2b705 55%,#d5a104 100%);color:#222222;box-shadow:0 4px 0 #967103,0 8px 18px rgba(0,0,0,.18);}
 .b-cta.tone-dark .btn{background:linear-gradient(180deg,#696969 0%,#484848 55%,#3f3f3f 100%);color:#ffffff;box-shadow:0 4px 0 #2d2d2d,0 8px 18px rgba(0,0,0,.18);}
+.b-cta.tone-pink .btn{background:linear-gradient(180deg,#ff6fa6 0%,#ff4f93 55%,#e04681 100%);color:#ffffff;box-shadow:0 4px 0 #9e315b,0 8px 18px rgba(0,0,0,.18);color:#fff}
 .b-cta.v-flat .btn{background:var(--bx,#e8503a);color:var(--bxt,#ffffff);box-shadow:none}
 .b-cta.v-pill .btn{border-radius:999px}
 .b-cta.v-outline .btn{background:none;color:var(--bxd,#b53e2d);
   border:2px solid var(--bx,#e8503a);box-shadow:none}
 .b-cta.v-outline .btn small{opacity:.75}
+/* 記事LP型：「＼あおり／」を大きく、赤いグラデーション＋金のふち、小さい文字が上・大きい文字が下、右に▶、光が流れて、ぷよぷよ動く */
+.b-cta.v-kiji{padding:22px 16px 26px}
+.b-cta.v-kiji .cta-note{font-size:19px;font-weight:900;color:#1a1a1a;letter-spacing:.04em;margin:0 0 10px}
+.b-cta.v-kiji .btn{--k1:#eb6552;--k2:#b53e2d;--k3:#792a1e;
+  display:flex;flex-direction:column-reverse;align-items:center;justify-content:center;gap:2px;max-width:440px;
+  border-radius:999px;padding:14px 60px 15px 26px;color:#fff;font-size:21px;font-weight:900;line-height:1.3;
+  background:linear-gradient(180deg,var(--k1) 0%,var(--k2) 55%,var(--k3) 100%);border:2px solid #f3cf6b;
+  box-shadow:0 5px 0 var(--k3),0 10px 18px rgba(0,0,0,.22);text-shadow:0 1px 2px rgba(0,0,0,.25);overflow:hidden;isolation:isolate}
+.b-cta.v-kiji.tone-acc .btn{--k1:#4cc96b;--k2:#16a043;--k3:#0b6f2c}
+.b-cta.v-kiji.tone-dark .btn{--k1:#4a5563;--k2:#2b3440;--k3:#151b22}
+.b-cta.v-kiji.tone-pink .btn{--k1:#ff9cc4;--k2:#ff4f93;--k3:#d4126a;border-color:#ffe08a}
+.b-cta.v-kiji .btn small{font-size:13.5px;font-weight:700;opacity:1;margin:0;letter-spacing:.03em}
+.b-cta.v-kiji .btn .cta-em{color:#ffe14d;font-weight:900}
+.b-cta.v-kiji .cta-go{position:absolute;right:14px;top:50%;width:32px;height:32px;margin-top:-16px;border-radius:50%;background:#fff;
+  box-shadow:0 2px 4px rgba(0,0,0,.2)}
+.b-cta.v-kiji .cta-go::after{content:"";position:absolute;left:12px;top:9px;border-style:solid;border-width:7px 0 7px 11px;
+  border-color:transparent transparent transparent var(--k2)}
+.b-cta.v-kiji .btn::after{content:"";position:absolute;top:-20%;left:-60%;width:30%;height:140%;z-index:-1;pointer-events:none;
+  background:linear-gradient(100deg,rgba(255,255,255,0),rgba(255,255,255,.55),rgba(255,255,255,0));transform:skewX(-20deg);
+  animation:ctaShine 3s ease-in-out infinite}
+@keyframes ctaShine{0%{left:-60%}50%,100%{left:130%}}
+.b-cta.v-kiji .btn.anim{animation:ctaPuyo 1.6s ease-in infinite}
+@keyframes ctaPuyo{0%,10%{transform:scale(1.04)}30%,40%{transform:scale(.99)}50%{transform:scale(1,1.03)}60%{transform:scale(1.04)}70%{transform:scale(1)}100%{transform:scale(1.04)}}
+.b-cta.v-kiji .btn:active{transform:translateY(3px);box-shadow:0 2px 0 var(--k3)}
+.cta-badges{list-style:none;display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin:14px 0 0;padding:0}
+.cta-badges li{font-size:12px;font-weight:700;color:var(--tx);background:#fff;border:1px solid var(--bd);border-radius:999px;padding:4px 11px 4px 24px;position:relative}
+.cta-badges li::before{content:"";position:absolute;left:10px;top:50%;width:8px;height:4px;margin-top:-4px;border-left:2px solid #16a043;border-bottom:2px solid #16a043;transform:rotate(-45deg)}
 
 
 /* 共通：空の画像欄（編集中と一覧の縮小表示だけ） */
@@ -736,7 +765,8 @@ font-size:36px;line-height:1;text-shadow:0 0 6px #ffd400,0 0 16px #ffd400,0 0 2p
 @keyframes an-shine-b{0%,10%,55%,100%{filter:none}30%{filter:brightness(1.12) saturate(1.08)}}
 /* パソコン・スマホの「動きを減らす」設定（Windows の「アニメーションを表示する」オフなど）でも止めない。
    広告LPとして動きを見せるのが目的で、止めると編集画面でも動きが確認できず「使えない」と見えてしまうため */
-
+.vanim:not([controls])::-webkit-media-controls-start-playback-button{display:none!important;-webkit-appearance:none}
+.vanim:not([controls])::-webkit-media-controls{display:none!important}
 .lp .bk-bz88k05s > figure > figcaption{display:none!important}
 
 
@@ -909,7 +939,6 @@ font-size:36px;line-height:1;text-shadow:0 0 6px #ffd400,0 0 16px #ffd400,0 0 2p
 
 
 .lp .bk-bl18bl0g .cta-sub{color:#00a040!important;display:none!important}
-.lp .bk-bl18bl0g .cta-note{display:none!important}
 
 
 
@@ -926,9 +955,7 @@ font-size:36px;line-height:1;text-shadow:0 0 6px #ffd400,0 0 16px #ffd400,0 0 2p
 
 .lp .bk-bfq2qbct > figure > img{border-radius:0px!important}
 
-.lp .bk-byx9hyug .cta-note{display:none!important}
 .lp .bk-byx9hyug .cta-sub{display:none!important}
-.lp .bk-byx9hyug .btn > small{display:none!important}
 
 
 
@@ -972,7 +999,6 @@ font-size:36px;line-height:1;text-shadow:0 0 6px #ffd400,0 0 16px #ffd400,0 0 2p
 
 
 
-.lp .bk-bwn1gjs2 .cta-note{display:none!important}
 .lp .bk-bwn1gjs2 .cta-sub{display:none!important}
 
 
@@ -988,7 +1014,7 @@ font-size:36px;line-height:1;text-shadow:0 0 6px #ffd400,0 0 16px #ffd400,0 0 2p
 <div class="lp">
 <section class="b b-text tx-c" style="line-height:1.2"><p><span style="font-size: 13px; color: rgb(230, 0, 0); font-weight: bold;">このページは18ヶ月分無料チケットが</span></p><p><span style="font-size: 13px; color: rgb(230, 0, 0); font-weight: bold;">当たった方限定ページです！</span></p><p><span style="font-size: 13px; color: rgb(230, 0, 0); font-weight: bold;">（調べても出てこないので閉じないでください！）</span></p></section>
 <section class="b b-vfile v-round bk-bz88k05s" style="padding-left:0px;padding-right:0px"><figure>
-<span class="vwrap"><img src="uploads/1_42ca9d70.anim.webp" style="background-image:url(uploads/1_42ca9d70.poster.webp);background-size:cover;background-position:center" class="vanim" width="720" height="1044" alt=""></span>
+<span class="vwrap"><canvas style="background-image:url(uploads/1_42ca9d70.frames/poster.webp);background-size:100% 100%" class="vanim" width="720" height="1044" data-frames="uploads/1_42ca9d70.frames/" data-n="48" data-per="3" data-fps="30"></canvas></span>
 
 </figure></section>
 <section class="b b-text tx-c" style="padding-bottom:30px"><p>実は今韓国で注目されている</p><p><span style="color: rgb(230, 0, 0); font-weight: bold; font-size: 28px;"><span class="mk">『脂肪細胞ダイエット』</span></span>を</p><p>ご存知ですか？</p></section>
@@ -996,7 +1022,7 @@ font-size:36px;line-height:1;text-shadow:0 0 6px #ffd400,0 0 16px #ffd400,0 0 2p
 SNSで話題沸騰中！！" width="1000" height="563">
 <figcaption>※「今までのダイエットは何だったの？」と<br>SNSで話題沸騰中！！</figcaption></figure></section>
 <section class="b b-text tx-c"><p>実は今これ</p><p><span class="mk">＼韓国アイドルも注目してる！／</span></p><p>って言われているんです！🔥</p></section>
-<section class="b b-image v-round bk-bhyxguf6" style="padding-bottom:4px;padding-left:0px;padding-right:0px"><figure><img loading="lazy" decoding="async" src="uploads/inline_4547f0daee.webp" alt="頑張って食事制限してもすぐリバウンドする本当の理由が、
+<section class="b b-image v-round bk-bhyxguf6" style="padding-bottom:4px;padding-left:0px;padding-right:0px"><figure><img src="uploads/inline_4547f0daee.webp" alt="頑張って食事制限してもすぐリバウンドする本当の理由が、
 ついに判明しました…！" width="778" height="438">
 <figcaption>頑張って食事制限してもすぐリバウンドする本当の理由が、<br>ついに判明しました…！</figcaption></figure></section>
 <section class="b b-text tx-c" style="font-size:20px;padding-bottom:20px"><p><span style="color: rgb(0, 102, 204);"><span style="font-weight: bold;">「食事制限も運動も</span><span style="font-weight: bold;">頑張ったのに、</span><br><span style="font-weight: bold;">気づけば元通り…」</span></span></p><p><span style="font-weight: 700;">いつも私は悩んでいました…</span></p></section>
@@ -1041,12 +1067,12 @@ SNSで話題沸騰中！！" width="1000" height="563">
 <section class="b b-h2" id="toc0" style="padding-top:40px;padding-bottom:30px"><h2>なぜ我慢しても戻ってしまう？<br>今までのダイエットの罠</h2></section>
 <section class="b b-text tx-c" style="font-size:17px;padding-bottom:42px;padding-left:0px;padding-right:0px"><p><span style="font-size: 18px;"><span style="font-weight: bold;">「頑張って−3kg減らしたのに、</span><br><span style="font-weight: bold;">少し食べただけで</span><span style="font-weight: bold;">あっという間に元通り…」</span></span></p></section>
 <section class="b b-vfile v-round bk-bhm673ar" style="padding-bottom:30px"><figure>
-<span class="vwrap"><img loading="lazy" decoding="async" src="uploads/1_b158ea29.anim.webp" style="background-image:url(uploads/1_b158ea29.poster.webp);background-size:cover;background-position:center" class="vanim" width="720" height="405" alt=""></span>
+<span class="vwrap"><canvas style="background-image:url(uploads/1_b158ea29.frames/poster.webp);background-size:100% 100%" class="vanim" width="720" height="405" data-frames="uploads/1_b158ea29.frames/" data-n="59" data-per="10" data-fps="30"></canvas></span>
 
 </figure></section>
 <section class="b b-text tx-c" style="font-size:17px;padding-bottom:42px"><p><span style="font-size: 18px;"><span style="font-weight: bold;">「お腹や腰まわりの肉だけ、</span><br><span style="font-weight: bold;">どうしても落ちない…」</span></span></p></section>
 <section class="b b-vfile v-round bk-bjw9nmlt" style="padding-bottom:30px"><figure>
-<span class="vwrap"><img loading="lazy" decoding="async" src="uploads/file_cbc2dc90.anim.webp" style="background-image:url(uploads/file_cbc2dc90.poster.webp);background-size:cover;background-position:center" class="vanim" width="720" height="405" alt=""></span>
+<span class="vwrap"><canvas style="background-image:url(uploads/file_cbc2dc90.frames/poster.webp);background-size:100% 100%" class="vanim" width="720" height="405" data-frames="uploads/file_cbc2dc90.frames/" data-n="150" data-per="10" data-fps="30"></canvas></span>
 
 </figure></section>
 <section class="b b-text tx-c" style="font-size:17px;padding-bottom:0px"><p>多くの人が陥るこの</p></section>
@@ -1061,23 +1087,23 @@ SNSで話題沸騰中！！" width="1000" height="563">
 <section class="b b-text tx-c" style="font-size:21px;padding-bottom:0px"><p><span class="mk"><span style="font-size: 24px; color: rgb(67, 67, 67); font-weight: bold;">脂肪として</span><span style="font-weight: bold; color: rgb(230, 0, 0); font-size: 32px;">「脂肪細胞」</span><span style="font-size: 24px; font-weight: bold;">に</span></span></p></section>
 <section class="b b-text tx-c" style="font-size:17px;padding-bottom:48px"><p>蓄えられます。</p></section>
 <section class="b b-vfile v-round" style="padding-left:0px;padding-right:0px"><figure>
-<span class="vwrap"><img loading="lazy" decoding="async" src="uploads/gemini_generated_video_5a3e0236_18b2a9f2.anim.webp" style="background-image:url(uploads/gemini_generated_video_5a3e0236_18b2a9f2.poster.webp);background-size:cover;background-position:center" class="vanim" width="640" height="360" alt=""></span>
+<span class="vwrap"><canvas style="background-image:url(uploads/gemini_generated_video_5a3e0236_18b2a9f2.frames/poster.webp);background-size:100% 100%" class="vanim" width="640" height="360" data-frames="uploads/gemini_generated_video_5a3e0236_18b2a9f2.frames/" data-n="301" data-per="13" data-fps="30"></canvas></span>
 <figcaption>※これがあなたの体内で起きている<br>「脂肪が蓄積するメカニズム」のイメージです。</figcaption>
 </figure></section>
 <section class="b b-text tx-c" style="font-size:17px;padding-bottom:16px"><p>そして、太る原因は</p></section>
 <section class="b b-text tx-c" style="font-size:32px;padding-bottom:60px"><p><span class="mk" style="font-weight: bold; color: #0066cc;">この脂肪細胞が</span><br><span class="mk" style="font-weight: bold; color: #0066cc;">巨大化すること。</span></p></section>
 <section class="b b-vfile v-round bk-b7si39bl" style="font-weight:900;padding-bottom:30px"><figure>
-<span class="vwrap"><img loading="lazy" decoding="async" src="uploads/2_e7b396bb.anim.webp" style="background-image:url(uploads/2_e7b396bb.poster.webp);background-size:cover;background-position:center" class="vanim" width="720" height="405" alt=""></span>
+<span class="vwrap"><canvas style="background-image:url(uploads/2_e7b396bb.frames/poster.webp);background-size:100% 100%" class="vanim" width="720" height="405" data-frames="uploads/2_e7b396bb.frames/" data-n="102" data-per="10" data-fps="30"></canvas></span>
 <figcaption>※1つひとつの脂肪細胞が風船のようにパンパンに膨らみ、<br>ぎっしり詰まっている状態です…💦</figcaption>
 </figure></section>
 <section class="b b-text tx-c" style="font-size:17px;padding-bottom:30px"><p>ここで、<br><span style="font-size: 22px;"><span style="font-weight: bold;">従来のダイエット</span>と</span></p></section>
 <section class="b b-vfile v-round" style="padding-bottom:30px"><figure>
-<span class="vwrap"><img loading="lazy" decoding="async" src="uploads/2_5d851478.anim.webp" style="background-image:url(uploads/2_5d851478.poster.webp);background-size:cover;background-position:center" class="vanim" width="720" height="405" alt=""></span>
+<span class="vwrap"><canvas style="background-image:url(uploads/2_5d851478.frames/poster.webp);background-size:100% 100%" class="vanim" width="720" height="405" data-frames="uploads/2_5d851478.frames/" data-n="105" data-per="10" data-fps="30"></canvas></span>
 
 </figure></section>
 <section class="b b-text tx-c" style="font-size:21px;padding-bottom:0px"><p><span style="font-size: 22px;"><span style="font-weight: bold; color: #e60000;"><span class="mk">「脂肪細胞ダイエット」には</span></span></span></p></section>
 <section class="b b-vfile v-round bk-b55uxnge" style="padding-bottom:30px"><figure>
-<span class="vwrap"><img loading="lazy" decoding="async" src="uploads/4_a2ab12fc.anim.webp" style="background-image:url(uploads/4_a2ab12fc.poster.webp);background-size:cover;background-position:center" class="vanim" width="650" height="394" alt=""></span>
+<span class="vwrap"><canvas style="background-image:url(uploads/4_a2ab12fc.frames/poster.webp);background-size:100% 100%" class="vanim" width="650" height="394" data-frames="uploads/4_a2ab12fc.frames/" data-n="180" data-per="11" data-fps="30"></canvas></span>
 
 </figure></section>
 <section class="b b-text tx-c" style="font-size:17px;padding-bottom:70px"><p><span style="font-size: 20px;"><span style="font-weight: bold;">決定的な違いがあるんです！！</span></span></p><p><span style="font-size: 20px; font-weight: 700;">これ正直私知りませんでした…</span></p></section>
@@ -1089,7 +1115,7 @@ SNSで話題沸騰中！！" width="1000" height="563">
 <section class="b b-text tx-c" style="font-size:23px;padding-bottom:4px"><p><span style="font-size: 18px; font-weight: bold;">膨らんだ脂肪細胞を</span></p></section>
 <section class="b b-text tx-c" style="font-size:23px;background:#fcfcfd;padding-bottom:48px"><p><span class="mk" style="font-weight: bold; color: #0066cc;">「小さくしているだけ</span><span class="mk" style="font-weight: bold;"><span style="color: rgb(0, 102, 204);">」</span></span><br></p><p><span style="color: rgb(0, 0, 0);">って知ってましたか？</span></p></section>
 <section class="b b-vfile v-round" style="padding-bottom:30px"><figure>
-<span class="vwrap"><img loading="lazy" decoding="async" src="uploads/download2_4bf02b13.anim.webp" style="background-image:url(uploads/download2_4bf02b13.poster.webp);background-size:cover;background-position:center" class="vanim" width="720" height="405" alt=""></span>
+<span class="vwrap"><canvas style="background-image:url(uploads/download2_4bf02b13.frames/poster.webp);background-size:100% 100%" class="vanim" width="720" height="405" data-frames="uploads/download2_4bf02b13.frames/" data-n="94" data-per="10" data-fps="30"></canvas></span>
 <figcaption>※風船みたいに一瞬小さくなっているだけ…！<br>これが食事制限や運動で痩せたときの体内イメージです💦</figcaption>
 </figure></section>
 <section class="b b-text tx-c" style="font-size:24px;padding-bottom:0px"><p><span style="color: rgb(230, 0, 0); font-weight: bold;">世界的科学誌『Nature』</span>等に<br>掲載された研究によると、<br></p></section>
@@ -1117,17 +1143,17 @@ SNSで話題沸騰中！！" width="1000" height="563">
 <section class="b b-text tx-c" style="font-size:17px;padding-bottom:0px"><p><span style="font-size: 20px;">その答えは、まさかの</span></p></section>
 <section class="b b-text tx-c" style="font-size:29px;padding-bottom:48px"><p><span class="mk" style="font-weight: bold; color: rgb(0, 102, 204); font-size: 32px;">「冷やしてドバッッ！」</span></p><p><span style="font-weight: bold;">これだけ。</span></p></section>
 <section class="b b-vfile v-round" style="padding-bottom:0px"><figure>
-<span class="vwrap"><img loading="lazy" decoding="async" src="uploads/3_5521b376.anim.webp" style="background-image:url(uploads/3_5521b376.poster.webp);background-size:cover;background-position:center" class="vanim" width="720" height="405" alt=""></span>
+<span class="vwrap"><canvas style="background-image:url(uploads/3_5521b376.frames/poster.webp);background-size:100% 100%" class="vanim" width="720" height="405" data-frames="uploads/3_5521b376.frames/" data-n="97" data-per="10" data-fps="30"></canvas></span>
 <figcaption>脂肪細胞を専用の機械で冷却🧊</figcaption>
 </figure></section>
 <section class="b b-text tx-c"><p><span style="font-weight: bold; font-size: 28px; color: rgb(0, 102, 204);">脂肪細胞を冷やして</span></p><p><br></p></section>
 <section class="b b-vfile v-round"><figure>
-<span class="vwrap"><img loading="lazy" decoding="async" src="uploads/download3_de22b8e2.anim.webp" style="background-image:url(uploads/download3_de22b8e2.poster.webp);background-size:cover;background-position:center" class="vanim" width="720" height="405" alt=""></span>
+<span class="vwrap"><canvas style="background-image:url(uploads/download3_de22b8e2.frames/poster.webp);background-size:100% 100%" class="vanim" width="720" height="405" data-frames="uploads/download3_de22b8e2.frames/" data-n="134" data-per="10" data-fps="30"></canvas></span>
 <figcaption>壊れた脂肪細胞が体内を流れて行きます！</figcaption>
 </figure></section>
 <section class="b b-text tx-c"><p><span style="font-weight: bold; font-size: 20px; color: rgb(230, 0, 0);">小さく崩れた脂肪細胞が体内で流れて</span></p><p><br></p></section>
 <section class="b b-vfile v-round"><figure>
-<span class="vwrap"><img loading="lazy" decoding="async" src="uploads/download4_feb55972.anim.webp" style="background-image:url(uploads/download4_feb55972.poster.webp);background-size:cover;background-position:center" class="vanim" width="720" height="405" alt=""></span>
+<span class="vwrap"><canvas style="background-image:url(uploads/download4_feb55972.frames/poster.webp);background-size:100% 100%" class="vanim" width="720" height="405" data-frames="uploads/download4_feb55972.frames/" data-n="158" data-per="10" data-fps="30"></canvas></span>
 <figcaption>あとは「ドバッッーと！」</figcaption>
 </figure></section>
 <section class="b b-text tx-c an-in ai-pop an-lp al-pulse" style="background:#fcfcfc"><p class="an-t"><span style="font-weight: bold; font-size: 40px; color: rgb(230, 0, 0);"><span class="mk">「ドバッーと！！」</span></span></p><p>と体外に出ていくだけ！！</p></section>
@@ -1160,11 +1186,11 @@ SNSで話題沸騰中！！" width="1000" height="563">
 <section class="b b-text tx-c" style="font-size:23px;padding-bottom:0px"><p><span class="mk" style="font-weight: bold; color: #e60000;">1回の施術で</span><br><span class="mk" style="font-weight: bold; color: #e60000;">約20％の脂肪減少効果※</span></p></section>
 <section class="b b-text tx-c" style="font-size:17px;padding-bottom:38px"><p>を目安とする研究も...！<br></p></section>
 <section class="b b-vfile v-round bk-bb7bqcr7" style="padding-bottom:30px"><figure>
-<span class="vwrap"><img loading="lazy" decoding="async" src="uploads/1_d56b4b55.anim.webp" style="background-image:url(uploads/1_d56b4b55.poster.webp);background-size:cover;background-position:center" class="vanim" width="720" height="405" alt=""></span>
+<span class="vwrap"><canvas style="background-image:url(uploads/1_d56b4b55.frames/poster.webp);background-size:100% 100%" class="vanim" width="720" height="405" data-frames="uploads/1_d56b4b55.frames/" data-n="120" data-per="10" data-fps="30"></canvas></span>
 
 </figure></section>
 <section class="b b-vfile v-round"><figure>
-<span class="vwrap"><img loading="lazy" decoding="async" src="uploads/_20_a1a2e041.anim.webp" style="background-image:url(uploads/_20_a1a2e041.poster.webp);background-size:cover;background-position:center" class="vanim" width="720" height="720" alt=""></span>
+<span class="vwrap"><canvas style="background-image:url(uploads/_20_a1a2e041.frames/poster.webp);background-size:100% 100%" class="vanim" width="720" height="720" data-frames="uploads/_20_a1a2e041.frames/" data-n="300" data-per="5" data-fps="30"></canvas></span>
 
 </figure></section>
 <section class="b b-box v-point tone-pri"><div class="bx">
@@ -1185,13 +1211,13 @@ SNSで話題沸騰中！！" width="1000" height="563">
 <figcaption>丁寧に悩みを聞いてくれました！</figcaption></figure></section>
 <section class="b b-text tx-c" style="font-size:17px;padding-bottom:48px"><p>いきなり施術に入るのではなく、<br>まずは<span style="font-weight: bold;"><span class="mk mk-full">丁寧なカウンセリング</span></span>で<br>一人ひとりの悩みや<br>太る原因を<br><span class="mk">じっくり分析</span>してくれます。</p></section>
 <section class="b b-vfile v-round" style="padding-bottom:30px"><figure>
-<span class="vwrap"><img loading="lazy" decoding="async" src="uploads/download_36c3f83e.anim.webp" style="background-image:url(uploads/download_36c3f83e.poster.webp);background-size:cover;background-position:center" class="vanim" width="720" height="719" alt=""></span>
+<span class="vwrap"><canvas style="background-image:url(uploads/download_36c3f83e.frames/poster.webp);background-size:100% 100%" class="vanim" width="720" height="719" data-frames="uploads/download_36c3f83e.frames/" data-n="152" data-per="5" data-fps="30"></canvas></span>
 <figcaption>「冷たっ！」っていうぐらいでした！</figcaption>
 </figure></section>
 <section class="b b-text tx-c" style="font-size:17px;padding-bottom:0px"><p>実際の施術中も</p></section>
 <section class="b b-text tx-c" style="font-size:21px;padding-bottom:42px"><p><span style="font-weight: bold; color: #e60000;">痛みを抑えた設計</span><span style="font-weight: bold;">になっており、</span></p></section>
 <section class="b b-vfile v-round" style="padding-bottom:30px"><figure>
-<span class="vwrap"><img loading="lazy" decoding="async" src="uploads/download1_8893c14a.anim.webp" style="background-image:url(uploads/download1_8893c14a.poster.webp);background-size:cover;background-position:center" class="vanim" width="720" height="719" alt=""></span>
+<span class="vwrap"><canvas style="background-image:url(uploads/download1_8893c14a.frames/poster.webp);background-size:100% 100%" class="vanim" width="720" height="719" data-frames="uploads/download1_8893c14a.frames/" data-n="151" data-per="5" data-fps="30"></canvas></span>
 <figcaption>ベッドで寝ながらスマホでYouTube見てたら<br>30分で終わって笑った（笑）</figcaption>
 </figure></section>
 <section class="b b-text tx-c" style="font-size:17px;padding-bottom:80px"><p>ベッドに横になりながら<br>スマホを眺めているだけで<br>完了する<span class="mk" style="font-weight: bold;">手軽さ</span>に驚きました！👏</p></section>
@@ -1249,11 +1275,11 @@ SNSで話題沸騰中！！" width="1000" height="563">
 前代未聞の特別プライス！" width="1000" height="576">
 <figcaption>※ランチ代や飲み会代をちょっと浮かせるだけで手が届く、<br>前代未聞の特別プライス！</figcaption></figure></section>
 <section class="b b-text tx-c"><p>まさかの<span style="color: rgb(0, 102, 204); font-size: 22px;">月々49,600円</span>が</p><p>↓↓↓</p><p><span style="color: rgb(230, 0, 0); font-weight: bold;"><span class="mk" style="font-size: 32px;">月々9,600円</span></span>に！！！！！</p><p>もうみなさんからの拍手が</p><p>スマホ越しに聞こえてきます（笑）</p></section>
-<section class="b-cta hl v-pill tone-pri" style="background:transparent;padding-top:0px;padding-bottom:12px">
-
-<a class="btn anim" href="https://"><span>10月のキャンペーン条件を<br>確認する</span>
-<small>無料カウンセリング WEB予約 約3分</small></a>
-</section>
+<section class="b-cta hl v-kiji tone-pink" style="background:transparent;padding-top:24px;padding-bottom:12px">
+<p class="cta-note">＼ 今だけの特別価格 ／</p>
+<a class="btn anim" href="https://"><span>10月の<b class="cta-em">キャンペーン条件</b>を<br>確認する</span>
+<small>月々49,600円 → 月々9,600円〜</small><i class="cta-go" aria-hidden="true"></i></a>
+<ul class="cta-badges"><li>WEB予約 約3分</li><li>カウンセリング無料</li></ul></section>
 <section class="b b-text tx-c" style="font-size:25px;padding-top:28px;padding-bottom:6px"><p><span style="font-weight: bold; color: rgb(230, 0, 0);"><span class="mk">＼　 さらに！ 　／</span></span></p></section>
 <section class="b b-text tx-c" style="font-size:19px;padding-bottom:42px"><p><span style="font-weight: bold;">思い出してください、みなさん</span></p><p><span style="font-weight: bold;">この限定ページに来る前に</span></p><p><span style="font-weight: 700;"><span style="font-size: 32px;"><span style="text-decoration-line: underline;">”とんでもないもの”</span></span>が</span></p><p><span style="font-weight: 700;">当たっていましたよね…</span></p></section>
 <section class="b b-deco dc-m dc-an v-tri3 tone-pri"><div class="dc" aria-hidden="true"><i></i><i></i><i></i></div></section>
@@ -1261,11 +1287,11 @@ SNSで話題沸騰中！！" width="1000" height="563">
 <section class="b b-image v-round" style="padding-bottom:30px"><figure><img loading="lazy" decoding="async" src="uploads/ChatGPTImage202691821_36_00_b45f34f9.webp" alt="※まさかの「18ヶ月分0円」当選おめでとうございます！！正直これ当たった人めちゃくちゃ羨ましいです…😭✨" width="1000" height="535">
 <figcaption>※まさかの「18ヶ月分0円」当選おめでとうございます！！正直これ当たった人めちゃくちゃ羨ましいです…😭✨</figcaption></figure></section>
 <section class="b b-text tx-c" style="font-size:17px;padding-top:12px;padding-bottom:36px"><p>限定ガチャで<span style="font-weight: bold;">当選した方だけ</span>が<br>利用できる、<span style="font-weight: bold; color: #e60000;"><span class="mk">特別なキャンペーン！</span></span></p><p><span style="font-weight: bold; color: #e60000;">まさかの<span style="font-size: 32px;"><span class="mk">18ヶ月分も無料</span></span>で</span></p><p><span style="font-weight: bold; color: #e60000;">受けられるなんて…</span></p></section>
-<section class="b-cta hl v-pill tone-acc bk-bl18bl0g" style="background:transparent;padding-bottom:54px">
-
-<a class="btn anim" href="https://"><span>当選チケットを使う</span>
-<small>無料カウンセリングを確認する</small></a>
-</section>
+<section class="b-cta hl v-kiji tone-pink bk-bl18bl0g" style="background:transparent;padding-bottom:54px">
+<p class="cta-note">＼ 当選した方だけの特別チケット ／</p>
+<a class="btn anim" href="https://"><span><b class="cta-em">当選チケット</b>を使う</span>
+<small>18ヶ月分0円※の当選チケット</small><i class="cta-go" aria-hidden="true"></i></a>
+<ul class="cta-badges"><li>WEB予約 約3分</li><li>カウンセリング無料</li></ul></section>
 <section class="b b-image v-round" style="padding-left:0px;padding-right:0px"><figure><img loading="lazy" decoding="async" src="uploads/image_11f07f5e.webp" alt="※ここで終わりだと思ったら大間違い！
 クリニック側の太っ腹すぎる追撃に
 正直ドン引きしました…（褒め言葉）" width="1000" height="563">
@@ -1302,11 +1328,11 @@ SNSで話題沸騰中！！" width="1000" height="563">
 <section class="b b-image v-round bk-bfq2qbct" style="padding-bottom:30px;padding-left:0px;padding-right:0px"><figure><img loading="lazy" decoding="async" src="uploads/Amazon5000_50d3c753.webp" alt="※カウンセリングの交通費代として「Amazonギフト券5,000円分」まで用意してくれる太っ腹対応😭✨" width="1000" height="563">
 <figcaption>※カウンセリングの交通費代として「Amazonギフト券5,000円分」まで用意してくれる太っ腹対応😭✨</figcaption></figure></section>
 <section class="b b-text tx-c" style="padding-bottom:30px"><span style="text-decoration-line: underline; font-size: 24px;">これ交通費分です笑</span><div><br></div><div>もう今回やって本当に良かったので</div><div><br></div><div>ぜっっっっっっったいに！</div><div>あなたにも受けてほしい</div><div>クリニックと私のキモチ❤️です</div><div><br><div><br></div><div><span style="color: rgb(230, 0, 0);">なので相談に行くだけでももちろんOK！</span></div></div><div><span style="color: rgb(230, 0, 0);">交通費の心配もなしです（準備万端）</span></div></section>
-<section class="b-cta hl v-pill tone-acc bk-byx9hyug" style="background:transparent;padding-top:0px;padding-bottom:30px">
-
-<a class="btn anim" href="https://"><span>無料カウンセリングを予約</span>
-<small>WEB予約 約3分</small></a>
-</section>
+<section class="b-cta hl v-kiji tone-pink bk-byx9hyug" style="background:transparent;padding-top:0px;padding-bottom:30px">
+<p class="cta-note">＼ アンケート回答者限定 ／</p>
+<a class="btn anim" href="https://"><span><b class="cta-em">無料</b>カウンセリングを予約</span>
+<small>Amazonギフト5,000円分プレゼント※</small><i class="cta-go" aria-hidden="true"></i></a>
+<ul class="cta-badges"><li>WEB予約 約3分</li><li>相談に行くだけでOK</li></ul></section>
 <section class="b b-text tx-c" style="font-size:25px;padding-top:28px;padding-bottom:0px"><p><span style="color: rgb(230, 0, 0); font-size: 28px;"><span class="mk"><span style="font-weight: bold;">\&nbsp;</span><span style="font-weight: bold;">さらに ！？/</span></span></span></p></section>
 <section class="b b-text tx-c"><p>もうお腹いっぱいですよね笑</p><p><span style="color: rgb(230, 0, 0); font-weight: bold; font-size: 24px;">でもまだ終わらない</span><span style="color: rgb(0, 0, 0); font-size: 20px;">の</span>が今回の</p><p>キャンペーンなんです！</p><p><br></p><p><span style="color: rgb(0, 102, 204); text-decoration-line: underline;">ちなみに</span></p><p><span style="color: rgb(0, 102, 204); text-decoration-line: underline;">あなたは58Kgありますか？</span></p><p><span style="color: rgb(0, 102, 204); text-decoration-line: underline;">（失礼で本当にすみません🙇）</span></p><p>だって…</p><p><br></p></section>
 <section class="b b-deco dc-m dc-an v-tri3 tone-pri"><div class="dc" aria-hidden="true"><i></i><i></i><i></i></div></section>
@@ -1318,7 +1344,7 @@ SNSで話題沸騰中！！" width="1000" height="563">
 <section class="b b-text tx-c" style="font-size:25px;padding-bottom:50px"><p><span class="mk" style="font-weight: bold; color: #e60000;">お会計が10万円OFF</span><span style="font-weight: bold;">に！</span></p></section>
 <section class="b b-text tx-c" style="font-size:25px;padding-bottom:0px"><p><span style="font-weight: 700; color: rgb(230, 0, 0);">\　しかも？しかも？　/</span></p><p><span style="font-weight: 700; color: rgb(230, 0, 0);">（まだまだ終わりません！）</span></p></section>
 <section class="b b-vfile v-round bk-b7wkzyo5" style="padding-bottom:0px;padding-left:0px;padding-right:0px"><figure>
-<span class="vwrap"><img loading="lazy" decoding="async" src="uploads/file_5525f5da.anim.webp" style="background-image:url(uploads/file_5525f5da.poster.webp);background-size:cover;background-position:center" class="vanim" width="720" height="405" alt=""></span>
+<span class="vwrap"><canvas style="background-image:url(uploads/file_5525f5da.frames/poster.webp);background-size:100% 100%" class="vanim" width="720" height="405" data-frames="uploads/file_5525f5da.frames/" data-n="150" data-per="10" data-fps="30"></canvas></span>
 <figcaption>※落とした脂肪1kgにつき1万円還元…！？<br>痩せれば痩せるほど得する前代未聞の「脂肪買取キャンペーン」です！</figcaption>
 </figure></section>
 <section class="b b-text tx-c" style="font-size:17px;padding-top:12px;padding-bottom:4px"><p><span style="font-weight: bold; font-size: 20px; color: rgb(230, 0, 0);">痩せれば痩せるほどお得に！！！🉐</span><br></p></section>
@@ -1329,7 +1355,7 @@ SNSで話題沸騰中！！" width="1000" height="563">
 <figcaption>※18ヶ月0円・5万円引き・アマギフ・10万円OFF<br>脂肪買取…「もうここまで来たら」試さない理由が<br>ありません（笑）</figcaption></figure></section>
 <section class="b b-text tx-c" style="font-size:25px;padding-top:8px;padding-bottom:6px"><p><span style="font-weight: bold; color: rgb(230, 0, 0);">\&nbsp; 正直、大赤字覚悟（泣）&nbsp; ／</span></p></section>
 <section class="b b-vfile v-round"><figure>
-<span class="vwrap vcrop" style="aspect-ratio:2160/1923.072"><span class="vcin" style="width:100%;height:199.6805%;left:0%;top:-58.8858%"><img loading="lazy" decoding="async" src="uploads/IMG_0413_9c2b6c12.anim.webp" style="background-image:url(uploads/IMG_0413_9c2b6c12.poster.webp);background-size:cover;background-position:center" class="vanim" width="720" height="1280" alt=""><i class="vov" style="background-image:url(uploads/IMG_0413_ov_2e75c14f.webp)"></i></span></span>
+<span class="vwrap vcrop" style="aspect-ratio:2160/1923.072"><span class="vcin" style="width:100%;height:199.6805%;left:0%;top:-58.8858%"><canvas style="background-image:url(uploads/IMG_0413_9c2b6c12.frames/poster.webp);background-size:100% 100%" class="vanim" width="720" height="1280" data-frames="uploads/IMG_0413_9c2b6c12.frames/" data-n="102" data-per="3" data-fps="30"></canvas><i class="vov" style="background-image:url(uploads/IMG_0413_ov_2e75c14f.webp)"></i></span></span>
 <figcaption>※あまりの特典内容にクリニック側も頭を抱えるレベル…！</figcaption>
 </figure></section>
 <section class="b b-text tx-c" style="font-size:17px;padding-bottom:0px"><p>ダイエットの第一歩を<br>踏み出したあなたへ</p></section>
@@ -1343,7 +1369,7 @@ SNSで話題沸騰中！！" width="1000" height="563">
 <section class="b b-text tx-c" style="font-size:19px;padding-bottom:0px"><p><span style="font-size: 22px;"><span style="font-weight: bold; color: rgb(0, 102, 204);">「ここまで安くても、</span><br><span style="font-weight: bold; color: rgb(0, 102, 204);">本当に効果が出るか不安…」</span></span></p></section>
 <section class="b b-text tx-c" style="font-size:17px;padding-bottom:0px"><p>なんて心配性すぎる人いませんか？</p><p>私たち痩せさせることには</p><p>自信があるんです！！</p><p><br></p></section>
 <section class="b b-vfile v-round"><figure>
-<span class="vwrap vcrop" style="aspect-ratio:2160/1976.064"><span class="vcin" style="width:100%;height:194.3257%;left:0%;top:-40.4197%"><img loading="lazy" decoding="async" src="uploads/IMG_0432_2f1970e2.anim.webp" style="background-image:url(uploads/IMG_0432_2f1970e2.poster.webp);background-size:cover;background-position:center" class="vanim" width="720" height="1280" alt=""><i class="vov" style="background-image:url(uploads/IMG_0432_ov_e6bfedd7.webp)"></i></span></span>
+<span class="vwrap vcrop" style="aspect-ratio:2160/1976.064"><span class="vcin" style="width:100%;height:194.3257%;left:0%;top:-40.4197%"><canvas style="background-image:url(uploads/IMG_0432_2f1970e2.frames/poster.webp);background-size:100% 100%" class="vanim" width="720" height="1280" data-frames="uploads/IMG_0432_2f1970e2.frames/" data-n="51" data-per="3" data-fps="30"></canvas><i class="vov" style="background-image:url(uploads/IMG_0432_ov_e6bfedd7.webp)"></i></span></span>
 <figcaption>※「安さだけじゃなく、しっかり効果も実感してほしいから」<br>本気で向き合ってきた証拠です！</figcaption>
 </figure></section>
 <section class="b b-deco dc-m dc-an v-tri3 tone-pri"><div class="dc" aria-hidden="true"><i></i><i></i><i></i></div></section>
@@ -1360,7 +1386,7 @@ SNSで話題沸騰中！！" width="1000" height="563">
 粘り倒した奇跡の交渉現場です（苦笑）" width="1000" height="563">
 <figcaption>※最後の方は完全にプライドを捨てて「どうにか…！」と<br>粘り倒した奇跡の交渉現場です（苦笑）</figcaption></figure></section>
 <section class="b b-text tx-c" style="font-size:17px;padding-bottom:0px"><p><span style="font-weight: bold; color: rgb(230, 0, 0); font-size: 22px;">なので！</span></p><p><span class="mk"><span style="font-weight: bold; color: rgb(230, 0, 0); font-size: 22px;">\&nbsp; ここまでの特典をまとめ</span><span style="color: rgb(230, 0, 0); font-size: 22px; font-weight: bold;">ると&nbsp; /</span></span></p></section>
-<section class="b b-image v-round" style="padding-bottom:0px"><figure><img loading="lazy" decoding="async" src="uploads/ChatGPTImage202692416_58_14_8d5d04f1.webp" alt="※割引・無料チケット・アマギフ・返金保証まで…
+<section class="b b-image v-round"><figure><img loading="lazy" decoding="async" src="uploads/101_8049d9aa.webp" alt="※割引・無料チケット・アマギフ・返金保証まで…
 奇跡の「全10大特典」がズラリと勢揃いした総まとめ！" width="1000" height="1500">
 <figcaption>※割引・無料チケット・アマギフ・返金保証まで…<br>奇跡の「全10大特典」がズラリと勢揃いした総まとめ！</figcaption></figure></section>
 <section class="b b-text tx-c" style="font-size:18px;padding-bottom:40px"><p><span style="color: rgb(230, 0, 0);"><span style="font-size: 18px; font-weight: bold;">え、やばくないですか？？？</span><br></span></p><p><span style="font-size: 18px; font-weight: bold; color: rgb(0, 0, 0);">もういかない理由が</span></p><p><span style="font-size: 18px; font-weight: bold; color: rgb(0, 0, 0);">無さすぎますよね！</span></p><p>さすがになんで</p><p>こんなに今だけ安いのか聞いたら</p></section>
@@ -1368,7 +1394,7 @@ SNSで話題沸騰中！！" width="1000" height="563">
 <div class="q"><div class="qq"><span class="mark">Q</span><span>なぜ、こんなにお得に<br>施術を受けることができるの？</span></div>
 <div class="qa"><span class="mark">A</span><span><span style="font-size: 22px; font-weight: bold;">新店舗オープン直後の<br>✨特別期間✨だからです。</span></span></div></div></section>
 <section class="b b-vfile v-round"><figure>
-<span class="vwrap"><img loading="lazy" decoding="async" src="uploads/IMG_0423_0fc1b404.anim.webp" style="background-image:url(uploads/IMG_0423_0fc1b404.poster.webp);background-size:cover;background-position:center" class="vanim" width="720" height="1280" alt=""></span>
+<span class="vwrap"><canvas style="background-image:url(uploads/IMG_0423_0fc1b404.frames/poster.webp);background-size:100% 100%" class="vanim" width="720" height="1280" data-frames="uploads/IMG_0423_0fc1b404.frames/" data-n="77" data-per="3" data-fps="30"></canvas></span>
 <figcaption>※オープンしたての綺麗な院内でお迎え！<br>今だけお得に通える秘密がこちらです…✨</figcaption>
 </figure></section>
 <section class="b b-check v-list tone-pri bk-btpnlwwh" style="padding-bottom:0px"><div class="cl">
@@ -1382,20 +1408,20 @@ SNSで話題沸騰中！！" width="1000" height="563">
 <section class="b b-text tx-c" style="font-size:17px;padding-top:12px;padding-bottom:40px"><p><span style="color: rgb(230, 0, 0);">⚠️今表示されている全条件が、<br>来月も同じように<br>適用されるとは限らないんです！</span></p></section>
 <section class="b b-text tx-c" style="font-size:17px;padding-bottom:36px"><p>なので予約に迷っている方も、<br>まずは<br><span style="font-weight: bold; font-size: 22px;">“今のキャンペーン内容”で</span><br><span class="mk" style="font-size: 28px; color: rgb(230, 0, 0);">予約してみるだけでOK！</span></p></section>
 <section class="b b-deco dc-m dc-an v-dots tone-pri"><div class="dc" aria-hidden="true"><i></i><i></i><i></i></div></section>
-<section class="b-cta hl v-pill tone-acc bk-bwn1gjs2" style="background:transparent;padding-top:50px;padding-bottom:30px">
-
-<a class="btn anim" href="https://"><span>あなたが適用できる<br>キャンペーンを確認する</span>
-<small>無料カウンセリング WEB予約 約3分</small></a>
-</section>
+<section class="b-cta hl v-kiji tone-pink bk-bwn1gjs2" style="background:transparent;padding-top:50px;padding-bottom:30px">
+<p class="cta-note">＼ 来月も同じ条件とは限りません ／</p>
+<a class="btn anim" href="https://"><span>あなたが適用できる<br><b class="cta-em">キャンペーン</b>を確認する</span>
+<small>今の適用状況をチェックするだけでOK</small><i class="cta-go" aria-hidden="true"></i></a>
+<ul class="cta-badges"><li>WEB予約 約3分</li><li>カウンセリング無料</li></ul></section>
 <section class="b b-text tx-c" style="font-size:17px;padding-top:16px;padding-bottom:14px"><p><span style="font-size: 28px; font-weight: bold;">もちろん！</span></p></section>
 <section class="b b-text tx-c" style="font-size:17px;padding-top:16px;padding-bottom:14px"><p><span style="font-size: 20px;">実際に施術を受けるか決めるのは、</span></p><p><span style="font-size: 20px;"><span style="font-weight: bold;">カウンセリングを受けてから</span>で、</span><br><span style="font-weight: bold; color: rgb(230, 0, 0); font-size: 40px;"><span class="mk">OK！✨</span></span></p></section>
 <section class="b b-text tx-c" style="font-size:17px;padding-bottom:36px"><p>後から<br><span style="color: rgb(0, 102, 204); font-weight: bold; font-size: 20px;">「あの時予約しておけば</span><span style="font-weight: bold; color: rgb(0, 102, 204);"><span style="font-size: 20px;">よかった…」</span><br></span>と後悔しないよう、</p><p><span style="font-weight: bold;">今使える条件だけでも</span><br><span class="mk" style="font-weight: bold; color: rgb(230, 0, 0); font-size: 28px;">早めに確保しておくのが<br>おすすめです！</span></p></section>
 <section class="b b-deco dc-m dc-an v-arrows tone-pri"><div class="dc" aria-hidden="true"><i></i><i></i><i></i></div></section>
-<section class="b-cta hl v-pill tone-acc" style="background:transparent;padding-top:0px;padding-bottom:0px">
-
-<a class="btn anim" href="https://"><span>当選チケットを使う</span>
-<small>無料カウンセリングを予約する</small></a>
-</section>
+<section class="b-cta hl v-kiji tone-pink" style="background:transparent;padding-top:0px;padding-bottom:0px">
+<p class="cta-note">＼ ご予約が埋まり次第終了 ／</p>
+<a class="btn anim" href="https://"><span><b class="cta-em">当選チケット</b>を使う</span>
+<small>18ヶ月分0円※の当選チケット</small><i class="cta-go" aria-hidden="true"></i></a>
+<ul class="cta-badges"><li>WEB予約 約3分</li><li>カウンセリング無料</li></ul></section>
 <section class="b b-box v-warn tone-pri"><div class="bx">
 <span class="ttl">ポイント</span><div><p>このページは、調べても出てきません。<br>お申し込みはこのリンクが表示されている今だけです。</p></div></div></section>
 <section class="b b-image v-round bk-byhigoq2" style="padding-left:0px;padding-right:0px"><figure><img loading="lazy" decoding="async" src="uploads/inline_94198f0ba0.webp" alt="" width="1000" height="683">
@@ -1424,6 +1450,14 @@ if(r.top<h*0.9&&r.bottom>0){el.classList.add('an-on');return false;}return true;
 if(!ins.length){removeEventListener('scroll',chk);removeEventListener('resize',chk);}}
 addEventListener('scroll',chk,{passive:true});addEventListener('resize',chk);
 chk();setTimeout(chk,60);
+})();</script><script>(function(){
+var vs=[].slice.call(document.querySelectorAll('video[autoplay]'));
+if(!vs.length)return;
+function go(){for(var i=0;i<vs.length;i++){var v=vs[i];v.muted=true;v.defaultMuted=true;v.playsInline=true;
+if(v.paused){try{var p=v.play();if(p&&p.catch)p.catch(function(){});}catch(e){}}}}
+go();
+['touchend','click','scroll'].forEach(function(t){document.addEventListener(t,go,{passive:true});});
+document.addEventListener('visibilitychange',function(){if(!document.hidden)go();});
 })();</script><script>(function(){if(window.__eqInit)return;window.__eqInit=1;
 function box(el){return el.closest('.eq');}
 function qs(b){return [].slice.call(b.querySelectorAll('.eq-q'));}
@@ -1462,4 +1496,39 @@ var bk=t.closest('.eq-back');if(bk){var b2=box(bk);show(b2,Math.max(0,cur(b2)-1)
 })();</script>
 
 
-</body></html>
+<script>
+(function(){
+  var cs=[].slice.call(document.querySelectorAll('canvas[data-frames]'));
+  var live=[];
+  cs.forEach(function(c){
+    c._n=+c.dataset.n; c._per=+c.dataset.per; c._fps=+c.dataset.fps; c._sheets={}; c._drawn=-1;
+    c._ctx=c.getContext('2d'); c._t0=null;
+  });
+  function sheet(c,k){
+    var s=c._sheets[k]; if(s) return s;
+    s=new Image(); s.decoding='async'; s.src=c.dataset.frames+'s'+('00'+k).slice(-3)+'.webp';
+    s.onload=function(){ s._ok=true; }; c._sheets[k]=s; return s;
+  }
+  function tick(now){
+    live.forEach(function(c){
+      if(c._t0===null) c._t0=now;
+      var i=Math.floor((now-c._t0)/1000*c._fps)%c._n, k=Math.floor(i/c._per), s=sheet(c,k);
+      var nk=(k+1)*c._per<c._n?k+1:0; sheet(c,nk);
+      for(var key in c._sheets){ if(+key!==k&&+key!==nk&&+key!==0){ delete c._sheets[key]; } }
+      if(s._ok&&i!==c._drawn){
+        var w=c.width,h=c.height; c._ctx.drawImage(s,0,(i-k*c._per)*h,w,h,0,0,w,h); c._drawn=i;
+      }
+    });
+    requestAnimationFrame(tick);
+  }
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(es){ es.forEach(function(e){
+      var c=e.target, at=live.indexOf(c);
+      if(e.isIntersecting){ if(at<0){ live.push(c); sheet(c,0); } }
+      else if(at>=0){ live.splice(at,1); c._sheets={0:c._sheets[0]}; c._t0=null; }
+    }); },{rootMargin:'400px 0px'});
+    cs.forEach(function(c){ io.observe(c); });
+  } else live=cs;
+  requestAnimationFrame(tick);
+})();
+</script></body></html>
